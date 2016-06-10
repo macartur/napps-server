@@ -53,7 +53,7 @@ Now, start the web server:
 ```bash
 python3 run.py
 ````
-You can now point your web browser to the url http://127.0.0.0:500/apps/. It 
+You can now point your web browser to the url http://127.0.0.0:5000/apps/. It 
 is expected to see a JSON structured document, describing all applications.
 
 ## Main Highlights
