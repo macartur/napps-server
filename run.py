@@ -14,6 +14,8 @@ app.register_blueprint(users.users_api)
 app.register_blueprint(napps.napps_api)
 app.register_blueprint(napps.napp_api)
 
+# Expose comments endpoints
+app.register_blueprint(comments.comments_api)
 
 if __name__ == '__main__':
     app.run(debug=True)

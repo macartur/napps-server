@@ -34,6 +34,8 @@ def get_apps():
                                                      (con.hget
                                                       (app_name,
                                                        "versions")))
+        app_dict["app"][app_name]["comments"] = con.scard(con.hget(app_name,
+                                                                   "comments"))
 
     return jsonify(app_dict)
 

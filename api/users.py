@@ -23,11 +23,9 @@ def get_authors():
                                                            (con.hget
                                                             (author_name,
                                                              "apps")))
-
-        authors_dict["author"][author_name]["comments"] = list(con.smembers
-                                                               (con.hget
-                                                                (author_name,
-                                                                 "comments")))
+        authors_dict["author"][author_name]["comments"] = con.scard(con.hget
+                                                                    (author_name,
+                                                                     "comments"))
 
     return jsonify(authors_dict)
 
