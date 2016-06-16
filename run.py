@@ -10,7 +10,7 @@ app = Flask(__name__)
 app.register_blueprint(users.user_api)
 app.register_blueprint(users.users_api)
 
-# Expose appl endpoints
+# Expose application endpoints
 app.register_blueprint(napps.napps_api)
 app.register_blueprint(napps.napp_api)
 

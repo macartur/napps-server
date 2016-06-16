@@ -16,6 +16,11 @@ con = config.CON
 
 @napps_api.route('/apps/', methods=['GET'])
 def get_apps():
+    """
+    This routine creates an endpoint that shows details about all applications.
+    It returns all information in JSON format.
+    """
+
     app_dict = {"app": {}}
     app_names = con.smembers("apps")
 
@@ -42,6 +47,11 @@ def get_apps():
 
 @napp_api.route('/apps/<name>', methods=['GET'])
 def get_app(name):
+    """
+    This routine creates an endpoint that shows details about a specific
+    application. It returns all information in JSON format.
+    """
+
     app_dict = {"app": {}}
 
     app_dict["app"][name] = con.hgetall("app:"+name)

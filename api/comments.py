@@ -15,6 +15,10 @@ comments_api = Blueprint('comments_api', __name__)
 
 @comments_api.route('/comments', methods=['GET'])
 def get_comments():
+    """
+    This routine creates an endpoint that shows all comments for each
+    application. It returns all information in JSON format.
+    """
 
     comments_dict = {"comments": {}}
     app_indexes = con.smembers("apps")

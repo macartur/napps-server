@@ -13,6 +13,11 @@ con = config.CON
 
 @users_api.route('/authors', methods=['GET'])
 def get_authors():
+    """
+    This routine creates an endpoint that shows all applications developers
+    (application authors) with their information. It returns all  information
+    in JSON format.
+    """
 
     authors_dict = {"author": {}}
     authors_names = con.smembers("authors")
@@ -23,6 +28,7 @@ def get_authors():
                                                            (con.hget
                                                             (author_name,
                                                              "apps")))
+        # TODO: Put this line in PEP8 format.
         authors_dict["author"][author_name]["comments"] = con.scard(con.hget
                                                                     (author_name,
                                                                      "comments"))
@@ -32,6 +38,10 @@ def get_authors():
 
 @user_api.route('/authors/<name>', methods=['GET'])
 def get_author(name):
+    """
+    This routine creates an endpoint that shows details about a specific
+    application author. It returns all information in JSON format.
+    """
 
     author_dict = {"author": {}}
 
