@@ -20,12 +20,12 @@ def get_comments():
     application. It returns all information in JSON format.
     """
 
-    comments_dict = {"comments": {}}
+    comments_dict = {}
     app_indexes = con.smembers("apps")
 
     for index in app_indexes:
         app_name = con.hget(index,"name")
         for comment in list(con.smembers(index+":comments")):
-            comments_dict["comments"][comment] = con.hgetall(comment)
+            comments_dict[comment] = con.hgetall(comment)
 
-    return jsonify(comments_dict)
+    return jsonify({'comments': comments_dict})

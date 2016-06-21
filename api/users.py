@@ -19,21 +19,20 @@ def get_authors():
     in JSON format.
     """
 
-    authors_dict = {"author": {}}
+    # authors_dict = {"author": {}}
+    authors_dict = {}
     authors_names = con.smembers("authors")
 
     for author_name in authors_names:
-        authors_dict["author"][author_name] = con.hgetall(author_name)
-        authors_dict["author"][author_name]["apps"] = list(con.smembers
-                                                           (con.hget
-                                                            (author_name,
-                                                             "apps")))
+        authors_dict[author_name] = con.hgetall(author_name)
+        authors_dict[author_name]["apps"] = list(con.smembers
+                                                 (con.hget
+                                                  (author_name,"apps")))
         # TODO: Put this line in PEP8 format.
-        authors_dict["author"][author_name]["comments"] = con.scard(con.hget
-                                                                    (author_name,
-                                                                     "comments"))
+        authors_dict[author_name]["comments"] = con.scard(con.hget
+                                                          (author_name,"comments"))
 
-    return jsonify(authors_dict)
+    return jsonify({'authors': authors_dict})
 
 
 @user_api.route('/authors/<name>', methods=['GET'])
@@ -43,14 +42,12 @@ def get_author(name):
     application author. It returns all information in JSON format.
     """
 
-    author_dict = {"author": {}}
+    author_dict = {}
 
-    author_dict["author"][name] = con.hgetall(name)
-    author_dict["author"][name]["apps"] = list(con.smembers(con.hget
-                                                            ("author:"+name,
-                                                             "apps")))
-    author_dict["author"][name]["comments"] = list(con.smembers
-                                                   (con.hget
-                                                    ("author:"+name,
-                                                        "comments")))
-    return jsonify(author_dict)
+    author_dict[name] = con.hgetall(name)
+    author_dict[name]["apps"] = list(con.smembers(con.hget
+                                                  ("author:"+name,"apps")))
+    author_dict[name]["comments"] = list(con.smembers
+                                         (con.hget("author:"+name,"comments")))
+
+    return jsonify({'author': author_dict})
