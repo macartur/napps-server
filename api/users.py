@@ -11,6 +11,23 @@ api = Blueprint('user_api', __name__)
 
 con = config.CON
 
+
+def get_apps(author_name):
+    exclude = ['author', 'tags', 'comments', 'license']
+
+    author_napps = {}
+    for apps in list(con.smembers(con.hget(author_name,"apps"))):
+        author_napps[apps] = con.hgetall("app:"+apps)
+        for item in exclude:
+            author_napps.pop(item, None)
+
+    return author_napps
+
+
+def get_redis_list(name, key):
+    return list(con.smembers(con.hget(name,key)))
+
+
 @api.route('/authors', methods=['GET'])
 def get_authors():
     """
@@ -45,11 +62,13 @@ def get_author(name):
 
     author_dict = {}
 
-
     author_dict[name] = con.hgetall(name)
-    author_dict[name]["apps"] = list(con.smembers(con.hget
-                                                  ("author:"+name,"apps")))
-    author_dict[name]["comments"] = list(con.smembers
-                                         (con.hget("author:"+name,"comments")))
+    author_dict[name]["apps"] = get_apps(name)
+
+    # author_dict[name] = con.hgetall(name)
+    # author_dict[name]["apps"] = list(con.smembers(con.hget
+    #                                               ("author:"+name,"apps")))
+    # author_dict[name]["comments"] = list(con.smembers
+    #                                      (con.hget("author:"+name,"comments")))
 
     return jsonify({'author': author_dict})
