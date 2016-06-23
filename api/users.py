@@ -1,17 +1,17 @@
 from flask import Blueprint
 from flask import jsonify
+from flask import request
 
 # Local source tree imports
 import config
 
 # Flask Blueprints
-users_api = Blueprint('users_api', __name__)
-user_api = Blueprint('user_api', __name__)
+api = Blueprint('user_api', __name__)
+# user_api = Blueprint('user_api', __name__)
 
 con = config.CON
 
-
-@users_api.route('/authors', methods=['GET'])
+@api.route('/authors', methods=['GET'])
 def get_authors():
     """
     This routine creates an endpoint that shows all applications developers
@@ -19,23 +19,24 @@ def get_authors():
     in JSON format.
     """
 
-    # authors_dict = {"author": {}}
     authors_dict = {}
     authors_names = con.smembers("authors")
 
-    for author_name in authors_names:
-        authors_dict[author_name] = con.hgetall(author_name)
-        authors_dict[author_name]["apps"] = list(con.smembers
-                                                 (con.hget
-                                                  (author_name,"apps")))
-        # TODO: Put this line in PEP8 format.
-        authors_dict[author_name]["comments"] = con.scard(con.hget
-                                                          (author_name,"comments"))
+    if 'name' in request.args:
+        return get_author(request.args['name'])
+    else:
+        for author_name in authors_names:
+            authors_dict[author_name] = con.hgetall(author_name)
+            authors_dict[author_name]["apps"] = list(con.smembers
+                                                     (con.hget
+                                                      (author_name,"apps")))
+            authors_dict[author_name]["comments"] = con.scard(con.hget
+                                                              (author_name,
+                                                               "comments"))
+        return jsonify({'authors': authors_dict})
 
-    return jsonify({'authors': authors_dict})
 
-
-@user_api.route('/authors/<name>', methods=['GET'])
+@api.route('/authors/<name>', methods=['GET'])
 def get_author(name):
     """
     This routine creates an endpoint that shows details about a specific
@@ -43,6 +44,7 @@ def get_author(name):
     """
 
     author_dict = {}
+
 
     author_dict[name] = con.hgetall(name)
     author_dict[name]["apps"] = list(con.smembers(con.hget
