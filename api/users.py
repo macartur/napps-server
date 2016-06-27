@@ -22,8 +22,6 @@ def get_apps(author_name):
         author_napps[apps]['versions'] = get_redis_list(apps,"versions")
         for item in exclude:
             author_napps[apps].pop(item, None)
-
-    # print(author_napps)
     return author_napps
 
 

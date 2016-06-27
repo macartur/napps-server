@@ -14,18 +14,23 @@ con = config.CON
 api = Blueprint('comments_api', __name__)
 
 
+def get_redis_list(name, key):
+     return list(con.smembers(con.hget(name,key)))
+
+
 @api.route('/comments', methods=['GET'])
 def get_comments():
     """
     This routine creates an endpoint that shows all comments for each
     application. It returns all information in JSON format.
     """
+    comments_dict = {}
 
     if 'name' in request.args:
-        return get_comment(request.args['name'])
+        comments_dict = get_comment(request.args['name'])
 
     else:
-        comments_dict = {}
+
         app_indexes = con.smembers("apps")
 
         for index in app_indexes:
@@ -36,3 +41,11 @@ def get_comments():
     return jsonify({'comments': comments_dict})
 
 
+def get_comment(app_name):
+    comment_dict = {}
+    app_key = "app:"+app_name
+
+    for comment in get_redis_list(app_key, "comments"):
+        comment_dict[comment] = con.hgetall(comment)
+
+    return comment_dict
