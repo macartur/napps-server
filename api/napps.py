@@ -16,7 +16,7 @@ api = Blueprint('napps_api', __name__)
 
 
 def get_author(app_name):
-    exclude = ['phone', 'pass', 'email']
+    exclude = ['phone', 'pass', 'email', 'comments', 'apps']
     author = con.hgetall(con.hget(app_name, "author"))
 
     for item in exclude:
@@ -38,10 +38,10 @@ def get_apps():
     for name in con.smembers("apps"):
         apps[name] = con.hgetall(name)
         apps[name]["author"] = get_author(name)
-        apps[name]['ofversions'] = get_redis_list(name, "ofversions")
-        apps[name]['tags'] = get_redis_list(name, "tags")
-        apps[name]['versions'] = get_redis_list(name, "versions")
-        apps[name]['comments'] = con.scard(con.hget(name, "comments"))
+        apps[name]["ofversions"] = get_redis_list(name, "ofversions")
+        apps[name]["tags"] = get_redis_list(name, "tags")
+        apps[name]["versions"] = get_redis_list(name, "versions")
+        apps[name]["comments"] = con.scard(con.hget(name, "comments"))
 
     return jsonify({'napps': apps})
 
@@ -55,12 +55,11 @@ def get_app(name):
 
     app = {}
     app_key = "app:"+name
-    print(app_key)
     app[name] = con.hgetall(app_key)
-    app[name]['author'] = get_author(app_key)
-    app[name]['ofversions'] = get_redis_list(app_key,"ofversions")
-    app[name]['tags'] = get_redis_list(app_key,"tags")
-    app[name]['versions'] = get_redis_list(app_key, "versions")
-    app[name]['comments'] = con.scard(con.hget(app_key, "comments"))
+    app[name]["author"] = get_author(app_key)
+    app[name]["ofversions"] = get_redis_list(app_key,"ofversions")
+    app[name]["tags"] = get_redis_list(app_key,"tags")
+    app[name]["versions"] = get_redis_list(app_key, "versions")
+    app[name]["comments"] = con.scard(con.hget(app_key, "comments"))
 
     return jsonify({'napp': app})
