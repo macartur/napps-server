@@ -3,67 +3,63 @@
 # Third-party imports
 from flask import Blueprint
 from flask import jsonify
+from flask import request
 
 # Local source tree imports
 import config
 
-# Flask Blueprints
-napps_api = Blueprint('napps_api', __name__)
-napp_api = Blueprint('napp_api', __name__)
-
 con = config.CON
 
 
-@napps_api.route('/apps/', methods=['GET'])
+# Flask Blueprints
+api = Blueprint('napps_api', __name__)
+
+
+def get_author(app_name):
+    exclude = ['phone', 'pass', 'email', 'comments', 'apps']
+    author = con.hgetall(con.hget(app_name, "author"))
+
+    for item in exclude:
+        author.pop(item, None)
+    return author
+
+
+def get_redis_list(name, key):
+    return list(con.smembers(con.hget(name,key)))
+
+
+@api.route('/napps/', methods=['GET'])
 def get_apps():
     """
     This routine creates an endpoint that shows details about all applications.
     It returns all information in JSON format.
     """
 
-    app_dict = {"app": {}}
-    app_names = con.smembers("apps")
+    apps = {}
+    for name in con.smembers("apps"):
+        app = con.hgetall(name)
+        app["author"] = get_author(name)
+        app["ofversions"] = get_redis_list(name, "ofversions")
+        app["tags"] = get_redis_list(name, "tags")
+        app["comments"] = con.scard(con.hget(name, "comments"))
+        apps[name] = app
 
-    for app_name in app_names:
-        app_dict["app"][app_name] = con.hgetall(app_name)
-        app_dict["app"][app_name]["author"] = con.hgetall(con.hget(app_name,
-                                                                   "author"))
-        app_dict["app"][app_name]["ofversions"] = list(con.smembers
-                                                       (con.hget
-                                                        (app_name,
-                                                         "ofversions")))
-        app_dict["app"][app_name]["tags"] = list(con.smembers
-                                                 (con.hget(app_name,
-                                                           "tags")))
-        app_dict["app"][app_name]["versions"] = list(con.smembers
-                                                     (con.hget
-                                                      (app_name,
-                                                       "versions")))
-        app_dict["app"][app_name]["comments"] = con.scard(con.hget(app_name,
-                                                                   "comments"))
-
-    return jsonify(app_dict)
+    return jsonify({'napps': apps})
 
 
-@napp_api.route('/apps/<name>', methods=['GET'])
+@api.route('/napps/<name>', methods=['GET'])
 def get_app(name):
     """
     This routine creates an endpoint that shows details about a specific
     application. It returns all information in JSON format.
     """
 
-    app_dict = {"app": {}}
+    app_key = "app:"+name
+    app = con.hgetall(app_key)
+    app["author"] = get_author(app_key)
+    app["ofversions"] = get_redis_list(app_key, "ofversions")
+    app["tags"] = get_redis_list(app_key, "tags")
+    app["versions"] = get_redis_list(app_key, "versions")
+    app["comments"] = con.scard(con.hget(name, "comments"))
 
-    app_dict["app"][name] = con.hgetall("app:"+name)
-    app_dict["app"][name]["author"] = con.hgetall(con.hget
-                                                  ("app:"+name, "author"))
-    app_dict["app"][name]["ofversions"] = list(con.smembers
-                                               (con.hget
-                                                ("app:"+name, "ofversions")))
-    app_dict["app"][name]["tags"] = list(con.smembers
-                                         (con.hget("app:"+name, "tags")))
-    app_dict["app"][name]["versions"] = list(con.smembers
-                                             (con.hget
-                                              ("app:"+name, "versions")))
-
-    return jsonify(app_dict)
+    return jsonify({'napp': app})

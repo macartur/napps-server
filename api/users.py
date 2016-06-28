@@ -1,17 +1,36 @@
 from flask import Blueprint
 from flask import jsonify
+from flask import request
 
 # Local source tree imports
 import config
+from api import common
 
 # Flask Blueprints
-users_api = Blueprint('users_api', __name__)
-user_api = Blueprint('user_api', __name__)
+api = Blueprint('user_api', __name__)
 
 con = config.CON
 
 
-@users_api.route('/authors', methods=['GET'])
+def get_apps(author_name):
+    exclude = ['author', 'tags', 'comments', 'license', 'description']
+
+    author_napps = {}
+    author_key = "author:"+author_name
+    for apps in get_redis_list(author_key,'apps'):
+        author_napps[apps] = con.hgetall('app:'+apps)
+        author_napps[apps]['ofversions'] = get_redis_list(apps,"ofversions")
+        author_napps[apps]['versions'] = get_redis_list(apps,"versions")
+        for item in exclude:
+            author_napps[apps].pop(item, None)
+    return author_napps
+
+
+def get_redis_list(name, key):
+     return list(con.smembers(con.hget(name,key)))
+
+
+@api.route('/authors', methods=['GET'])
 def get_authors():
     """
     This routine creates an endpoint that shows all applications developers
@@ -19,38 +38,27 @@ def get_authors():
     in JSON format.
     """
 
-    authors_dict = {"author": {}}
+    authors = {}
     authors_names = con.smembers("authors")
 
-    for author_name in authors_names:
-        authors_dict["author"][author_name] = con.hgetall(author_name)
-        authors_dict["author"][author_name]["apps"] = list(con.smembers
-                                                           (con.hget
-                                                            (author_name,
-                                                             "apps")))
-        # TODO: Put this line in PEP8 format.
-        authors_dict["author"][author_name]["comments"] = con.scard(con.hget
-                                                                    (author_name,
-                                                                     "comments"))
+    for name in authors_names:
+        author = con.hgetall(name)
+        author["apps"] = get_redis_list(name, 'apps')
+        author["comments"] = len(get_redis_list(name, 'comments'))
+        authors[name] = author
 
-    return jsonify(authors_dict)
+    return jsonify({'authors': authors})
 
 
-@user_api.route('/authors/<name>', methods=['GET'])
+@api.route('/authors/<name>', methods=['GET'])
 def get_author(name):
     """
     This routine creates an endpoint that shows details about a specific
     application author. It returns all information in JSON format.
     """
+    author_key = "author:"+name
+    author = con.hgetall(author_key)
+    author["apps"] = get_apps(name)
+    author["comments"] = len(get_redis_list(name, 'comments'))
 
-    author_dict = {"author": {}}
-
-    author_dict["author"][name] = con.hgetall(name)
-    author_dict["author"][name]["apps"] = list(con.smembers(con.hget
-                                                            ("author:"+name,
-                                                             "apps")))
-    author_dict["author"][name]["comments"] = list(con.smembers
-                                                   (con.hget
-                                                    ("author:"+name,
-                                                        "comments")))
-    return jsonify(author_dict)
+    return jsonify({'author': author})
