@@ -26,17 +26,12 @@ def get_comments():
     """
     comments_dict = {}
 
-    if 'name' in request.args:
-        comments_dict = get_comment(request.args['name'])
+    app_indexes = con.smembers("apps")
 
-    else:
-
-        app_indexes = con.smembers("apps")
-
-        for index in app_indexes:
-            app_name = con.hget(index,"name")
-            for comment in list(con.smembers(index+":comments")):
-                comments_dict[comment] = con.hgetall(comment)
+    for index in app_indexes:
+        app_name = con.hget(index,"name")
+        for comment in list(con.smembers(index+":comments")):
+            comments_dict[app_name] = con.hgetall(comment)
 
     return jsonify({'comments': comments_dict})
 

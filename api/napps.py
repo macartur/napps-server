@@ -34,14 +34,15 @@ def get_apps():
     This routine creates an endpoint that shows details about all applications.
     It returns all information in JSON format.
     """
+
     apps = {}
     for name in con.smembers("apps"):
-        apps[name] = con.hgetall(name)
-        apps[name]["author"] = get_author(name)
-        apps[name]["ofversions"] = get_redis_list(name, "ofversions")
-        apps[name]["tags"] = get_redis_list(name, "tags")
-        apps[name]["versions"] = get_redis_list(name, "versions")
-        apps[name]["comments"] = con.scard(con.hget(name, "comments"))
+        app = con.hgetall(name)
+        app["author"] = get_author(name)
+        app["ofversions"] = get_redis_list(name, "ofversions")
+        app["tags"] = get_redis_list(name, "tags")
+        app["comments"] = con.scard(con.hget(name, "comments"))
+        apps[name] = app
 
     return jsonify({'napps': apps})
 
@@ -53,13 +54,12 @@ def get_app(name):
     application. It returns all information in JSON format.
     """
 
-    app = {}
     app_key = "app:"+name
-    app[name] = con.hgetall(app_key)
-    app[name]["author"] = get_author(app_key)
-    app[name]["ofversions"] = get_redis_list(app_key,"ofversions")
-    app[name]["tags"] = get_redis_list(app_key,"tags")
-    app[name]["versions"] = get_redis_list(app_key, "versions")
-    app[name]["comments"] = con.scard(con.hget(app_key, "comments"))
+    app = con.hgetall(app_key)
+    app["author"] = get_author(app_key)
+    app["ofversions"] = get_redis_list(app_key, "ofversions")
+    app["tags"] = get_redis_list(app_key, "tags")
+    app["versions"] = get_redis_list(app_key, "versions")
+    app["comments"] = con.scard(con.hget(name, "comments"))
 
     return jsonify({'napp': app})

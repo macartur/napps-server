@@ -4,6 +4,7 @@ from flask import request
 
 # Local source tree imports
 import config
+from api import common
 
 # Flask Blueprints
 api = Blueprint('user_api', __name__)
@@ -37,20 +38,16 @@ def get_authors():
     in JSON format.
     """
 
-    authors_dict = {}
+    authors = {}
     authors_names = con.smembers("authors")
 
-    if 'name' in request.args:
-        return get_author(request.args['name'])
-    else:
-        for author_name in authors_names:
-            authors_dict[author_name] = con.hgetall(author_name)
-            authors_dict[author_name]['apps'] = get_redis_list(author_name,
-                                                               'apps')
-            authors_dict[author_name]['comments'] = len(get_redis_list
-                                                        (author_name,
-                                                         'comments'))
-        return jsonify({'authors': authors_dict})
+    for name in authors_names:
+        author = con.hgetall(name)
+        author["apps"] = get_redis_list(name, 'apps')
+        author["comments"] = len(get_redis_list(name, 'comments'))
+        authors[name] = author
+
+    return jsonify({'authors': authors})
 
 
 @api.route('/authors/<name>', methods=['GET'])
@@ -59,9 +56,9 @@ def get_author(name):
     This routine creates an endpoint that shows details about a specific
     application author. It returns all information in JSON format.
     """
-    author = {}
     author_key = "author:"+name
-    author[name] = con.hgetall(author_key)
-    author[name]["apps"] = get_apps(name)
+    author = con.hgetall(author_key)
+    author["apps"] = get_apps(name)
+    author["comments"] = len(get_redis_list(name, 'comments'))
 
     return jsonify({'author': author})
