@@ -2,8 +2,11 @@
 
 # Third-party imports
 from flask import Blueprint
+from flask import request
+from flask import redirect
 from flask import jsonify
 from flask.ext.login import login_required
+from flask_login import login_user
 
 # Local source tree imports
 import config
@@ -29,6 +32,20 @@ def get_redis_list(name, key):
     return list(con.smembers(con.hget(name,key)))
 
 
+@api.route("/login/", methods=["GET", "POST"])
+def login_page():
+    """
+    Endpoint to perform the authentication
+    :return:
+    """
+    if request.method == "POST":
+        user = common.User.get(request.form['username'])
+
+        if user and common.hash_pass(request.form['password']) == user.password:
+            login_user(user, remember=True)
+            return redirect(request.args.get("next") or "/napps/")
+
+
 @api.route('/napps/', methods=['GET'])
 def get_apps():
     """
@@ -49,6 +66,7 @@ def get_apps():
 
 
 @api.route('/napps/<name>', methods=['GET'])
+@login_required
 def get_app(name):
     """
     This routine creates an endpoint that shows details about a specific
@@ -65,16 +83,10 @@ def get_app(name):
 
     return jsonify({'napp': app})
 
-
-@api.route('/napps/<user_name>/<napp_name>', methods=['PUT'])
-@login_required
-def put_app(user_name, napp_name):
-    """
-    This routine creates an endpoint to upload an napp to the server.
-    User must be authenticated in order to upload the napp.
-    """
-
-
-
-
-
+# @api.route('/napps/<user_name>/<napp_name>', methods=['PUT'])
+# @login_required
+# def put_app(user_name, napp_name):
+#     """
+#     This routine creates an endpoint to upload an napp to the server.
+#     User must be authenticated in order to upload the napp.
+#     """
