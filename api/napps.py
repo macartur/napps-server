@@ -3,10 +3,11 @@
 # Third-party imports
 from flask import Blueprint
 from flask import jsonify
-from flask import request
+from flask.ext.login import login_required
 
 # Local source tree imports
 import config
+import api.common as common
 
 con = config.CON
 
@@ -48,6 +49,7 @@ def get_apps():
 
 
 @api.route('/napps/<name>', methods=['GET'])
+@login_required
 def get_app(name):
     """
     This routine creates an endpoint that shows details about a specific
