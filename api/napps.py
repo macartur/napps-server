@@ -49,7 +49,6 @@ def get_apps():
 
 
 @api.route('/napps/<name>', methods=['GET'])
-@login_required
 def get_app(name):
     """
     This routine creates an endpoint that shows details about a specific
@@ -65,3 +64,17 @@ def get_app(name):
     app["comments"] = con.scard(con.hget(name, "comments"))
 
     return jsonify({'napp': app})
+
+
+@api.route('/napps/<user_name>/<napp_name>', methods=['PUT'])
+@login_required
+def put_app(user_name, napp_name):
+    """
+    This routine creates an endpoint to upload an napp to the server.
+    User must be authenticated in order to upload the napp.
+    """
+
+
+
+
+
