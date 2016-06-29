@@ -52,6 +52,7 @@ class User(UserMixin):
 
         if con.sismember("authors", user_key):
             user_pass = con.hget(user_key, "pass")
+            print(user_pass)
             return User(userid, user_pass)
         return None
 

@@ -38,6 +38,7 @@ def login_page():
     Endpoint to perform the authentication
     :return:
     """
+    #print(request.method)
     if request.method == "POST":
         user = common.User.get(request.form['username'])
 
