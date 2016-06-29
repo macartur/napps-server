@@ -1,19 +1,20 @@
 from flask import Flask
+from flask import Response
+from flask.ext.login import LoginManager, UserMixin, login_required
 
 from api import users
 from api import napps
 from api import comments
-
-app = Flask(__name__)
+from api import common
 
 # Expose user endpoints
-app.register_blueprint(users.api)
+common.app.register_blueprint(users.api)
 
 # Expose application endpoints
-app.register_blueprint(napps.api)
+common.app.register_blueprint(napps.api)
 
 # Expose comments endpoints
-app.register_blueprint(comments.api)
+common.app.register_blueprint(comments.api)
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    common.app.run(debug=True)
