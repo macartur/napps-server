@@ -6,7 +6,6 @@ from flask import Flask
 from flask.ext.login import LoginManager, UserMixin, current_user
 from itsdangerous import URLSafeTimedSerializer
 
-
 # Local source tree imports
 import config
 

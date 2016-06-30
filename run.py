@@ -1,12 +1,14 @@
-from flask import Flask
-from flask import Response
-from flask.ext.login import LoginManager, UserMixin, login_required
+# System imports
+from datetime import timedelta
 
+# Third-party imports
+
+# Local source tree imports
 from api import users
 from api import napps
 from api import comments
 from api import common
-from datetime import timedelta
+
 
 # Expose user endpoints
 common.app.register_blueprint(users.api)
