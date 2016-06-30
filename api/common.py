@@ -3,12 +3,11 @@ import hashlib
 
 # Third-party imports
 from flask import Flask
-from flask.ext.login import LoginManager, UserMixin, current_user
+from flask.ext.login import LoginManager, UserMixin
 from itsdangerous import URLSafeTimedSerializer
 
 # Local source tree imports
 import config
-
 
 app = Flask(__name__)
 con = config.CON
@@ -91,7 +90,6 @@ def load_token(token):
     :param token: token to be check the expiration
     :return: User object if token is valid or None if not
     """
-
     max_age = app.config["REMEMBER_COOKIE_DURATION"].total_seconds()
     data = login_serializer.loads(token, max_age=max_age)
     user = User.get(data[0])

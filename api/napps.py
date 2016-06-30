@@ -48,7 +48,6 @@ def login_page():
 
     return render_template("login.html")
 
-
 @api.route('/napps/', methods=['GET'])
 def get_apps():
     """
