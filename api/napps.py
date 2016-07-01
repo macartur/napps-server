@@ -21,8 +21,14 @@ con = config.CON
 # Flask Blueprints
 api = Blueprint('napps_api', __name__)
 
+# Routines
 
 def get_author(app_name):
+    """
+    Gather all information about a given napp's author.
+    :param app_name: name of the napp to retrieve author data
+    :return: return a dict with author's data
+    """
     exclude = ['phone', 'pass', 'email', 'comments', 'apps']
     author = con.hgetall(con.hget(app_name, "author"))
 
@@ -32,8 +38,27 @@ def get_author(app_name):
 
 
 def get_redis_list(name, key):
+    """
+    Return a list type from REDIs DB.
+    :param name: name of the list
+    :param key: the key to return
+    :return: returns a list type
+    """
     return list(con.smembers(con.hget(name,key)))
 
+
+# TODO: Define some returns or exceptions to this procedure.
+def napp_git_download(git_url):
+    """
+    This routine is used to download, parse and store a json file located
+    in the napp repo.
+    :param git_url:
+    :return: 0 if all process worked fine
+    """
+
+    return 0
+
+# Endpoints Definitions
 
 @api.route("/login/", methods=["GET", "POST"])
 def login_page():
