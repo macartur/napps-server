@@ -1,6 +1,8 @@
 # System imports
 
 # Third-party imports
+from jsonschema import validate
+from jsonschema import ValidationError
 from flask import Blueprint
 from flask import request
 from flask import redirect
@@ -11,7 +13,7 @@ from flask_login import login_user
 
 # Local source tree imports
 import config
-import api.common as common
+from api import common
 
 con = config.CON
 
@@ -84,3 +86,19 @@ def get_app(name):
     app["comments"] = con.scard(con.hget(name, "comments"))
 
     return jsonify({'napp': app})
+
+
+@api.route('/napps/upload', methods=['GET', 'POST'])
+@login_required
+def napp_upload():
+    """
+    This endpoint receives a JSON document with git URL and the token
+    :return: HTTP code 200 in case JSON is ok. HTTP code 400 otherwise.
+    """
+
+    content = request.get_json(silent=True)
+    try:
+        validate(content, common.napps_schema)
+        return '', 200
+    except ValidationError:
+        return '', 400
