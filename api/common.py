@@ -18,11 +18,20 @@ login_manager.init_app(app)
 app.secret_key = "a_random_secret_key_$%#!@"
 login_serializer = URLSafeTimedSerializer(app.secret_key)
 
-# JSON Schema for Napps.
+# JSON Schema for Napps
 napps_schema = {
     "git": {"type": "string"},
     "token":  {"type" : "string"},
     "required": ["git", "token"]}
+
+# JSON Schema for Napps Description
+napp_git_schema = {
+    "name": {"type": "string"},
+    "description": {"type": "string"},
+    "license": {"type": "string"},
+    "ofversions": {"type": "string"},
+    "version": {"type": "string"},
+    "required": ["name", "license", "ofversions", "version"]}
 
 
 class User(UserMixin):
