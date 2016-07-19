@@ -5,6 +5,9 @@ import hashlib
 from flask import Flask
 from flask.ext.login import LoginManager, UserMixin
 from itsdangerous import URLSafeTimedSerializer
+from flask.ext.principal import Principal
+from flask.ext.principal import Permission
+from flask.ext.principal import RoleNeed
 
 # Local source tree imports
 import config
@@ -17,6 +20,9 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 app.secret_key = "a_random_secret_key_$%#!@"
 login_serializer = URLSafeTimedSerializer(app.secret_key)
+
+# Access Control
+admin_permission = Permission(RoleNeed('admin'))
 
 # JSON Schema for Napps
 napps_schema = {
