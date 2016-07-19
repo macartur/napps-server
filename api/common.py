@@ -45,9 +45,10 @@ class User(UserMixin):
     User Class for flask-Login
     """
 
-    def __init__(self, userid, password):
+    def __init__(self, userid, password, role):
         self.id = userid
         self.password = password
+        self.role = role
 
     def get_auth_token(self):
         """
@@ -71,8 +72,8 @@ class User(UserMixin):
 
         if con.sismember("authors", user_key):
             user_pass = con.hget(user_key, "pass")
-            print(user_pass)
-            return User(userid, user_pass)
+            user_role = con.hget(user_key, "role")
+            return User(userid, user_pass, user_role)
         return None
 
 

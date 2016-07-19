@@ -60,6 +60,7 @@ def napp_git_download(git_url):
 
 # Endpoints Definitions
 
+
 @api.route("/login/", methods=["GET", "POST"])
 def login_page():
     """
@@ -74,6 +75,7 @@ def login_page():
             return redirect(request.args.get("next") or "/napps/")
 
     return render_template("login.html")
+
 
 @api.route('/napps/', methods=['GET'])
 def get_apps():
