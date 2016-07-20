@@ -3,7 +3,6 @@
 # Third-party imports
 from flask import Blueprint
 from flask import jsonify
-from flask import request
 
 # Local source tree imports
 import config
