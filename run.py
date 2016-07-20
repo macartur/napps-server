@@ -4,11 +4,16 @@ from datetime import timedelta
 # Third-party imports
 
 # Local source tree imports
+from api import login
+from api import logout
 from api import users
 from api import napps
 from api import comments
 from api import common
 
+# Expose login and logout endpoints
+common.app.register_blueprint(login.api)
+common.app.register_blueprint(logout.api)
 
 # Expose user endpoints
 common.app.register_blueprint(users.api)
