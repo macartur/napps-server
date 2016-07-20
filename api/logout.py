@@ -26,7 +26,7 @@ api = Blueprint('logout_api', __name__)
 def logout():
     """
     Endpoint to logout from the system
-    :return:
+    :return: page requested or endpoint to login again
     """
     logout_user()
 

@@ -22,7 +22,7 @@ api = Blueprint('login_api', __name__)
 def login_page():
     """
     Endpoint to perform the authentication
-    :return:
+    :return: page requested or /napps endpoint
     """
     if request.method == "POST":
         user = common.User.get(request.form['username'])
