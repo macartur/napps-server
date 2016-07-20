@@ -21,7 +21,7 @@ con = config.CON
 api = Blueprint('logout_api', __name__)
 
 
-@api.route("/logout/", methods=['GET', 'POST'])
+@api.route("/logout/")
 @login_required
 def logout():
     """
