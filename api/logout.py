@@ -23,7 +23,7 @@ con = config.CON
 api = Blueprint('logout_api', __name__)
 
 
-@api.route("/logout/")
+@api.route("/api/logout/")
 @login_required
 def logout():
     """
@@ -39,4 +39,4 @@ def logout():
     identity_changed.send(current_app._get_current_object(),
                           identity=AnonymousIdentity())
 
-    return redirect(request.args.get("next") or "/login/")
+    return redirect(request.args.get("next") or "/api/login/")

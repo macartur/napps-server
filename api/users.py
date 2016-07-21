@@ -34,7 +34,7 @@ def get_redis_list(name, key):
      return list(con.smembers(con.hget(name,key)))
 
 
-@api.route('/authors', methods=['GET'])
+@api.route('/api/authors', methods=['GET'])
 def get_authors():
     """
     This routine creates an endpoint that shows all applications developers
@@ -54,7 +54,7 @@ def get_authors():
     return jsonify({'authors': authors})
 
 
-@api.route('/authors/<name>', methods=['GET'])
+@api.route('/api/authors/<name>', methods=['GET'])
 def get_author(name):
     """
     This routine creates an endpoint that shows details about a specific

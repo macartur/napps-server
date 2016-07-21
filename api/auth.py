@@ -15,10 +15,10 @@ con = config.CON
 
 
 # Flask Blueprints
-api = Blueprint('login_api', __name__)
+api = Blueprint('auth_api', __name__)
 
 
-@api.route("/login/", methods=["GET", "POST"])
+@api.route("/api/auth/", methods=["GET", "POST"])
 def login_page():
     """
     Endpoint to perform the authentication
@@ -30,6 +30,6 @@ def login_page():
         if user and common.hash_pass(request.form['password']) == \
                 user.password:
             login_user(user, remember=True)
-            return redirect(request.args.get("next") or "/napps/")
+            return redirect(request.args.get("next") or "/api/napps/")
 
     return render_template("login.html")

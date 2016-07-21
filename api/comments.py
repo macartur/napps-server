@@ -17,7 +17,7 @@ def get_redis_list(name, key):
      return list(con.smembers(con.hget(name,key)))
 
 
-@api.route('/comments', methods=['GET'])
+@api.route('/api/comments', methods=['GET'])
 def get_comments():
     """
     This routine creates an endpoint that shows all comments for each

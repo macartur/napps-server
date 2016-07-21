@@ -60,7 +60,7 @@ def napp_git_download(git_url):
 # Endpoints Definitions
 
 
-@api.route('/napps/', methods=['GET'])
+@api.route('/api/napps/', methods=['GET'])
 @login_required
 def get_apps():
     """
@@ -80,7 +80,7 @@ def get_apps():
     return jsonify({'napps': apps})
 
 
-@api.route('/napps/<name>', methods=['GET'])
+@api.route('/api/napps/<name>', methods=['GET'])
 #@login_required
 def get_app(name):
     """
@@ -100,7 +100,7 @@ def get_app(name):
 
 
 # @login_required
-@api.route('/napps/upload', methods=['GET', 'POST'])
+@api.route('/api/napps/upload', methods=['GET', 'POST'])
 def napp_upload():
     """
     This endpoint receives a JSON document with git URL and the token
