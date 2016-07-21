@@ -1,0 +1,7 @@
+Flask
+Flask-Login
+Flask-Logging
+Flask-RESTful
+urllib5
+requests
+jsonschema
