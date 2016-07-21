@@ -1,5 +1,7 @@
 # System imports
 import hashlib
+import os
+import time
 
 # Third-party imports
 from flask import Flask
@@ -40,82 +42,71 @@ napp_git_schema = {
     "required": ["name", "license", "ofversions", "version"]}
 
 
-class User(UserMixin):
+def get_token_key (login):
     """
-    User Class for flask-Login
+    Returns the token key of a given user
+    :param login: login name to check
+    :return: Key in REDIS or None if user or key do not exist.
     """
+    user_key = "author:"+login
 
-    def __init__(self, userid, password, role):
-        self.id = userid
-        self.password = password
-        self.role = role
-
-    def get_auth_token(self):
-        """
-        Encode a secure token for cookie
-        :return: encoded token
-        """
-        data = [str(self.id), self.password]
-        return login_serializer.dumps(data)
-
-    @staticmethod
-    def get(userid):
-        """
-        Static method to search in REDIS and see if userid exists.  If it
-        does exist then return a User Object.  If not then return None as
-        required by Flask-Login.
-        :param userid: Userid to search for
-        :return: A User Object if user exists or None if not.
-        """
-
-        user_key = "author:"+userid
-
-        if con.sismember("authors", user_key):
-            user_pass = con.hget(user_key, "pass")
-            user_role = con.hget(user_key, "role")
-            return User(userid, user_pass, user_role)
+    if con.sismember("authors", user_key):
+        user_token_key = con.hget(user_key, "tokens")
+        return user_token_key
+    else:
         return None
 
 
-def hash_pass(password):
+class Tokens:
     """
-    Return the md5 hash of the password+salt
-    :param password: password to be converted
-    :return: password MD5
+    Class to manage Tokens
     """
-    salted_password = password + app.secret_key
-    return hashlib.md5(salted_password.encode()).hexdigest()
 
+    def __init__(self, login, token = None):
+        self.login = login
+        self.token = token
 
-@login_manager.user_loader
-def load_user(userid):
-    """
-    Flask-Login user_loader callback.
-    The user_loader function asks this function to get a User Object or return
-    None based on userid.
-    The userid was stored in the session environment by Flask-Login.
-    user_loader stores the returned User object in current_user during
-    every flask request.
-    :param userid: Userid of the current session
-    :return: return a User object every request
-    """
-    return User.get(userid)
+    @property
+    def token_gen(self):
+        """
+        Generates a new 256 bits token and store it in REDIs
+        :return: a tuple with token and expiration epoch
+        """
+        new_hash = hashlib.sha256(os.urandom(128)).hexdigest()
+        gen_time = int(time.time())
+        token_expiration = int(time.time()) + 900
 
+        # Token key in redis is the token itself
+        token_key = get_token_key(self.login)
+        if token_key is not None:
+            con.sadd(token_key, new_hash)
+            con.hset(new_hash, "login", self.login, "expire", token_expiration,
+                     "creation", gen_time)
+        else:
+            return None
 
-@login_manager.token_loader
-def load_token(token):
-    """
-    Flask-Login token_loader callback.
-    The token_loader function asks this function to take the token that was
-    stored on the users computer process to check if it's valid and then return
-    an User object if it's valid or None if it's not.
-    :param token: token to be check the expiration
-    :return: User object if token is valid or None if not
-    """
-    max_age = app.config["REMEMBER_COOKIE_DURATION"].total_seconds()
-    data = login_serializer.loads(token, max_age=max_age)
-    user = User.get(data[0])
+        return new_hash, token_expiration
 
-    if user and data[1] == user.password:
-        return user
-    return None
+    def token_is_expired(self):
+        """
+        This method verifies if a given token is already expired or not.
+        :return: True if expired or an integer with seconds remaing to expire.
+        """
+        curr_time = int(time.time())
+
+        # Retrieve the token data
+        token_to_validate = con.hgetall(self.token)
+
+        time_to_expire = token_to_validate["expire"] - curr_time
+        if time_to_expire <= 0:
+            return True
+        else:
+            return time_to_expire
+
+    def token_to_login(self):
+        """
+        This method returns the user login given a specific token
+        :return: Login of the token owner or None if token doesnt exist.
+        """
+        token_to_translate = con.hgetall(self.token)
+        return token_to_translate["login"]
