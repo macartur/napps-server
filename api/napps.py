@@ -7,6 +7,8 @@ from flask import Blueprint
 from flask import request
 from flask import jsonify
 from flask.ext.login import login_required
+import json
+from flask.ext.login import current_user
 
 # Local source tree imports
 import config
@@ -97,8 +99,8 @@ def get_app(name):
     return jsonify({'napp': app})
 
 
+# @login_required
 @api.route('/napps/upload', methods=['GET', 'POST'])
-@login_required
 def napp_upload():
     """
     This endpoint receives a JSON document with git URL and the token
@@ -108,6 +110,9 @@ def napp_upload():
     content = request.get_json(silent=True)
     try:
         validate(content, common.napps_schema)
+        print(current_user.get_id())
+        napp_git_download(content["git"])
         return '', 200
+
     except ValidationError:
         return '', 400

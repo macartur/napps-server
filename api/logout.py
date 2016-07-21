@@ -10,6 +10,8 @@ from flask_login import login_required
 from flask.ext.login import logout_user
 from flask.ext.principal import AnonymousIdentity
 from flask.ext.principal import identity_changed
+from flask.ext.login import current_user
+from flask.ext.principal import identity_loaded
 
 # Local source tree imports
 import config
@@ -28,6 +30,7 @@ def logout():
     Endpoint to logout from the system
     :return: page requested or endpoint to login again
     """
+
     logout_user()
 
     for key in ('identity.name', 'identity.auth_type'):
