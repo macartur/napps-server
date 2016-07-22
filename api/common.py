@@ -120,12 +120,12 @@ class Tokens:
         token_key = get_token_key(self.login)
         if token_key is not None:
             con.sadd(token_key, new_hash)
-            con.hset(new_hash, "login", self.login, "expire", token_expiration,
-                     "creation", gen_time)
+            token_hash = {'login': self.login, 'expire': token_expiration, 'creation': gen_time}
+            con.hmset(new_hash, token_hash)
         else:
             return None
 
-        return new_hash, token_expiration
+        return (new_hash, token_expiration)
 
     def token_is_expired(self):
         """
@@ -137,7 +137,7 @@ class Tokens:
         # Retrieve the token data
         token_to_validate = con.hgetall(self.token)
 
-        time_to_expire = token_to_validate["expire"] - curr_time
+        time_to_expire = int(token_to_validate["expire"]) - curr_time
         if time_to_expire <= 0:
             return True
         else:
