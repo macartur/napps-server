@@ -6,9 +6,7 @@ from jsonschema import ValidationError
 from flask import Blueprint
 from flask import request
 from flask import jsonify
-from flask.ext.login import login_required
-import json
-from flask.ext.login import current_user
+
 
 # Local source tree imports
 import config

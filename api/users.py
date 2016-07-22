@@ -3,7 +3,6 @@
 # Third-party imports
 from flask import Blueprint
 from flask import jsonify
-from flask.ext.login import login_required
 
 
 # Local source tree imports

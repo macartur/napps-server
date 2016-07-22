@@ -5,9 +5,7 @@ import time
 
 # Third-party imports
 from flask import Flask
-from flask.ext.login import LoginManager, UserMixin
 from itsdangerous import URLSafeTimedSerializer
-from flask.ext.principal import Principal
 from flask.ext.principal import Permission
 from flask.ext.principal import RoleNeed
 
@@ -18,8 +16,6 @@ app = Flask(__name__)
 con = config.CON
 
 # Authentication
-login_manager = LoginManager()
-login_manager.init_app(app)
 app.secret_key = "a_random_secret_key_$%#!@"
 login_serializer = URLSafeTimedSerializer(app.secret_key)
 

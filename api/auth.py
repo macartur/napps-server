@@ -3,9 +3,9 @@
 # Third-party imports
 from flask import Blueprint
 from flask import request
-from flask import redirect
-from flask import render_template
-from flask_login import login_user
+from flask import jsonify
+from jsonschema import validate
+from jsonschema import ValidationError
 
 # Local source tree imports
 import config
