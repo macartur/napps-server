@@ -72,29 +72,44 @@ class Users:
     Class to manage Users
     """
     def __init__(self, login):
-        self.login = login
+        self.__login = login
 
-    def tokens(self):
+    def has_token(self, token):
         """
-        This method returns a list with all tokens of a given user.
-        :return: List of all tokens of the user
+        This method verifies if a given token is owned by the user.
+        :param token: The token to be checked
+        :return: True if token is owned by the user or false if not
         """
-        pass
+
+        token_key = get_token_key(self.login)
+        if con.sismember(token_key, token):
+            return True
+        return False
+
+    @property
+    def login(self):
+        """
+        Returns the login name of the object
+        :return: User login
+        """
+        return self.__login
 
     @property
     def hash_pass(self):
         """
-        This method returns the hashed password of a given user
+        This method returns the hashed password stored in redis
         :return: Hashed password
         """
-        pass
+        author_key = "author:"+self.login
+        return con.hget(author_key, "pass")
 
     def user_role(self):
         """
         This method returns the role of a given user in system
         :return: Role name (admin or user)
         """
-        pass
+        author_key = "author:"+self.login
+        return con.hget(author_key, "role")
 
 
 class Tokens:
