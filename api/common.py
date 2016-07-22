@@ -57,12 +57,52 @@ def get_token_key (login):
         return None
 
 
+def hash_pass(password):
+    """
+    Return the md5 hash of the password+salt
+    :param password: password to be converted
+    :return: password MD5
+    """
+    salted_password = password + app.secret_key
+    return hashlib.md5(salted_password.encode()).hexdigest()
+
+
+class Users:
+    """
+    Class to manage Users
+    """
+    def __init__(self, login):
+        self.login = login
+
+    def tokens(self):
+        """
+        This method returns a list with all tokens of a given user.
+        :return: List of all tokens of the user
+        """
+        pass
+
+    @property
+    def hash_pass(self):
+        """
+        This method returns the hashed password of a given user
+        :return: Hashed password
+        """
+        pass
+
+    def user_role(self):
+        """
+        This method returns the role of a given user in system
+        :return: Role name (admin or user)
+        """
+        pass
+
+
 class Tokens:
     """
     Class to manage Tokens
     """
 
-    def __init__(self, login, token = None):
+    def __init__(self, login=None, token=None):
         self.login = login
         self.token = token
 
