@@ -26,7 +26,7 @@ def get_author(app_name):
     :param app_name: name of the napp to retrieve author data
     :return: return a dict with author's data
     """
-    exclude = ['phone', 'pass', 'email', 'comments', 'apps']
+    exclude = ['phone', 'pass', 'email', 'comments', 'apps', 'tokens', 'role']
     author = con.hgetall(con.hget(app_name, "author"))
 
     for item in exclude:
@@ -45,41 +45,19 @@ def get_redis_list(name, key):
 
 
 # TODO: Define some returns or exceptions to this procedure.
-def napp_git_download(git_url):
+def napp_git_download(git_url, login):
     """
     This routine is used to download, parse and store a json file located
-    in the napp repo.
-    :param git_url:
+    in the napp repo and adds it to the login apps tree.
+    :param git_url: url of the napp git repo
+    :param login: user login to be used to add the napp
     :return: 0 if all process worked fine
     """
-
     return 0
 
 # Endpoints Definitions
 
-
-@api.route('/api/napps/', methods=['GET'])
-@login_required
-def get_apps():
-    """
-    This routine creates an endpoint that shows details about all applications.
-    It returns all information in JSON format.
-    """
-
-    apps = {}
-    for name in con.smembers("apps"):
-        app = con.hgetall(name)
-        app["author"] = get_author(name)
-        app["ofversions"] = get_redis_list(name, "ofversions")
-        app["tags"] = get_redis_list(name, "tags")
-        app["comments"] = con.scard(con.hget(name, "comments"))
-        apps[name] = app
-
-    return jsonify({'napps': apps})
-
-
 @api.route('/api/napps/<name>', methods=['GET'])
-#@login_required
 def get_app(name):
     """
     This routine creates an endpoint that shows details about a specific
@@ -97,20 +75,35 @@ def get_app(name):
     return jsonify({'napp': app})
 
 
-# @login_required
-@api.route('/api/napps/upload', methods=['GET', 'POST'])
-def napp_upload():
+@api.route('/api/napps/', methods=['GET', 'POST'])
+def get_apps():
     """
-    This endpoint receives a JSON document with git URL and the token
-    :return: HTTP code 200 in case JSON is ok. HTTP code 400 otherwise.
+    This routine creates an endpoint that shows details about all applications.
+    It returns all information in JSON format.
     """
+    if request.method == "GET":
+        apps = {}
+        for name in con.smembers("apps"):
+            app = con.hgetall(name)
+            app["author"] = get_author(name)
+            app["ofversions"] = get_redis_list(name, "ofversions")
+            app["tags"] = get_redis_list(name, "tags")
+            app["comments"] = con.scard(con.hget(name, "comments"))
+            apps[name] = app
 
-    content = request.get_json(silent=True)
-    try:
-        validate(content, common.napps_schema)
-        print(current_user.get_id())
-        napp_git_download(content["git"])
-        return '', 200
+        return jsonify({'napps': apps})
 
-    except ValidationError:
-        return '', 400
+    elif request.method == "POST":
+        content = request.get_json(silent=True)
+        try:
+            validate(content, common.napps_schema)
+            token_sent = common.Tokens(token_id=content['token'])
+            current_user = common.Users(login=token_sent.token_to_login())
+
+            if token_sent.token_is_expired():
+                return '', 400
+            else:
+                napp_git_download(content['git'], current_user.login)
+                return '', 200
+        except ValidationError:
+            return '', 401

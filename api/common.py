@@ -28,6 +28,12 @@ napps_schema = {
     "token":  {"type" : "string"},
     "required": ["git", "token"]}
 
+# JSON Schema for authentication
+napps_auth = {
+    "login": {"type": "string"},
+    "password": {"type": "string"},
+    "required": ["login", "password"]}
+
 # JSON Schema for Napps Description
 napp_git_schema = {
     "name": {"type": "string"},
@@ -113,14 +119,17 @@ class Tokens:
     Class to manage Tokens
     """
 
-    def __init__(self, login=None, token=None):
-        self.login = login
-        self.token = token
+    def __init__(self, token_id=None):
+        self.__token_id = token_id
 
     @property
-    def token_gen(self):
+    def token_id(self):
+        return self.__token_id
+
+    def token_gen(login):
         """
         Generates a new 256 bits token and store it in REDIs
+        :param login: User's login to store the token
         :return: a tuple with token and expiration epoch
         """
         new_hash = hashlib.sha256(os.urandom(128)).hexdigest()
@@ -128,15 +137,17 @@ class Tokens:
         token_expiration = int(time.time()) + 900
 
         # Token key in redis is the token itself
-        token_key = get_token_key(self.login)
+        token_key = get_token_key(login)
         if token_key is not None:
             con.sadd(token_key, new_hash)
-            token_hash = {'login': self.login, 'expire': token_expiration, 'creation': gen_time}
+            token_hash = {'login': login,
+                          'expire': token_expiration,
+                          'creation': gen_time}
             con.hmset(new_hash, token_hash)
         else:
             return None
 
-        return (new_hash, token_expiration)
+        return {"token": new_hash, "expiration": token_expiration}
 
     def token_is_expired(self):
         """
@@ -146,18 +157,18 @@ class Tokens:
         curr_time = int(time.time())
 
         # Retrieve the token data
-        token_to_validate = con.hgetall(self.token)
+        token_to_validate = con.hgetall(self.token_id)
 
-        time_to_expire = int(token_to_validate["expire"]) - curr_time
+        time_to_expire = int(token_to_validate['expire']) - curr_time
         if time_to_expire <= 0:
             return True
         else:
-            return time_to_expire
+            return False
 
     def token_to_login(self):
         """
         This method returns the user login given a specific token
         :return: Login of the token owner or None if token doesnt exist.
         """
-        token_to_translate = con.hgetall(self.token)
-        return token_to_translate["login"]
+        token_to_translate = con.hgetall(self.token_id)
+        return token_to_translate['login']

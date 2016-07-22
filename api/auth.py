@@ -18,18 +18,25 @@ con = config.CON
 api = Blueprint('auth_api', __name__)
 
 
-@api.route("/api/auth/", methods=["GET", "POST"])
-def login_page():
+@api.route("/api/auth/", methods=["POST"])
+def napps_auth():
     """
     Endpoint to perform the authentication
-    :return: page requested or /napps endpoint
+    :return: A token to the user and the expiration time (epoch)
     """
-    if request.method == "POST":
-        user = common.User.get(request.form['username'])
+    content = request.get_json(silent=True)
 
-        if user and common.hash_pass(request.form['password']) == \
-                user.password:
-            login_user(user, remember=True)
-            return redirect(request.args.get("next") or "/api/napps/")
+    try:
+        validate(content, common.napps_auth)
+        user = content['login']
+        password = common.hash_pass(content['password'])
+        current_user = common.Users(login=user)
 
-    return render_template("login.html")
+        if password == current_user.hash_pass:
+            user_new_token = common.Tokens.token_gen(current_user.login)
+            return jsonify(user_new_token)
+        else:
+            return '', 401
+
+    except ValidationError:
+        return '', 400
