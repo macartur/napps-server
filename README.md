@@ -1,6 +1,5 @@
 # Napps-Server
 
-[![Openflow][of-icon]][of-url]
 [![Tag][tag-icon]][tag-url]
 [![Release][release-icon]][release-url]
 [![Tests][tests-icon]][tests-url]
@@ -46,13 +45,17 @@ your localhost and listen in the default port 6379. Please refer to the
 
 After Redis startup, populate the database with a small dataset located
 in our repository (napps-server/tests/dataset.redis) as follow:
+
 ```bash
 cat napps-server/tests/dataset.redis | redis-cli
 ````
+
 Now, start the web server:
+
 ```bash
 python3 run.py
 ````
+
 You can now point your web browser to the url http://127.0.0.0:5000/apps/. It 
 is expected to see a JSON structured document, describing all applications.
 
