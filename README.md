@@ -51,31 +51,6 @@ cd src/
 cat napps_server_git_repo_dir/schema_redis.nosql | ./redis-cli
 ```
 
-
-
-## Usage
-
-In order to deploy a small *naps-server*, you must start Redis database 
-on your localhost and listen in the default port 6379. Please refer to 
-the [Redis Quick Start][redis-install-url] guide for details.
-
-After Redis startup, populate the database with a small dataset located
-in our repository (napps-server/tests/dataset.redis) as follow:
-
-```bash
-cat napps-server/tests/dataset.redis | redis-cli
-```
-
-Now, start the web server:
-
-```bash
-python3 run.py
-```
-
-You can now point your web browser to the url 
-http://127.0.0.0:5000/apps/. It is expected to see a JSON structured 
-document, describing all applications.
-
 ## Main Highlights
 
 ### Speed focused
