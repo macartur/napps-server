@@ -5,6 +5,9 @@ import hashlib
 from flask import Flask
 from flask.ext.login import LoginManager, UserMixin
 from itsdangerous import URLSafeTimedSerializer
+from flask.ext.principal import Principal
+from flask.ext.principal import Permission
+from flask.ext.principal import RoleNeed
 
 # Local source tree imports
 import config
@@ -18,15 +21,34 @@ login_manager.init_app(app)
 app.secret_key = "a_random_secret_key_$%#!@"
 login_serializer = URLSafeTimedSerializer(app.secret_key)
 
+# Access Control
+admin_permission = Permission(RoleNeed('admin'))
+
+# JSON Schema for Napps
+napps_schema = {
+    "git": {"type": "string"},
+    "token":  {"type" : "string"},
+    "required": ["git", "token"]}
+
+# JSON Schema for Napps Description
+napp_git_schema = {
+    "name": {"type": "string"},
+    "description": {"type": "string"},
+    "license": {"type": "string"},
+    "ofversions": {"type": "string"},
+    "version": {"type": "string"},
+    "required": ["name", "license", "ofversions", "version"]}
+
 
 class User(UserMixin):
     """
     User Class for flask-Login
     """
 
-    def __init__(self, userid, password):
+    def __init__(self, userid, password, role):
         self.id = userid
         self.password = password
+        self.role = role
 
     def get_auth_token(self):
         """
@@ -50,8 +72,8 @@ class User(UserMixin):
 
         if con.sismember("authors", user_key):
             user_pass = con.hget(user_key, "pass")
-            print(user_pass)
-            return User(userid, user_pass)
+            user_role = con.hget(user_key, "role")
+            return User(userid, user_pass, user_role)
         return None
 
 
