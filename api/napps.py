@@ -101,9 +101,9 @@ def get_apps():
             current_user = common.Users(login=token_sent.token_to_login())
 
             if token_sent.token_is_expired():
-                return '', 400
+                return '', 401
             else:
                 napp_git_download(content['git'], current_user.login)
                 return '', 200
         except ValidationError:
-            return '', 401
+            return '', 400
