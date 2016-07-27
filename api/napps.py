@@ -97,13 +97,13 @@ def get_apps():
         content = request.get_json(silent=True)
         try:
             validate(content, common.napps_schema)
-            token_sent = common.Tokens(token_id=content['token'])
-            current_user = common.Users(login=token_sent.token_to_login())
-
-            if token_sent.token_is_expired():
-                return '', 400
-            else:
-                napp_git_download(content['git'], current_user.login)
-                return '', 200
+            token_sent = common.Token(token_id=content['token'])
+            if token_sent.token_exist():
+                current_user = common.User(login=token_sent.token_to_login())
+                if token_sent.token_valid() and current_user.is_active:
+                    napp_git_download(content['git'], current_user.login)
+                    return '', 200
+                else:
+                    return '', 400
         except ValidationError:
             return '', 401
