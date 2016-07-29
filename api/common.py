@@ -36,12 +36,17 @@ napps_auth = {
 
 # JSON Schema for Napps Description
 napp_git_schema = {
-    "name": {"type": "string"},
-    "description": {"type": "string"},
-    "license": {"type": "string"},
-    "ofversions": {"type": "string"},
-    "version": {"type": "string"},
-    "required": ["name", "license", "ofversions", "version"]}
+    "napp": {
+            "name": {"type": "string"},
+            "version": {"type": "string"},
+            "ofversion": {"type": "string"},
+            "dependencies": {"type": "string"},
+            "git": {"type": "string"},
+            "tags": {"type": "array"},
+            "required": ["name", "version", "ofversion"]
+    },
+    "required": ["napp"]
+}
 
 
 def get_token_key (login):
