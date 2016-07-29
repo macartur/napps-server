@@ -4,6 +4,8 @@
     "version": "0.1",
     "ofversion": "1.3",
     "dependencies": "None",
+    "description": "Just a napp example",
+    "license": "MIT",
     "git": "http://someurl.com/napp_example",
     "tags": [
       "sample",
