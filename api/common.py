@@ -41,9 +41,11 @@ napp_git_schema = {
             "version": {"type": "string"},
             "ofversion": {"type": "string"},
             "dependencies": {"type": "string"},
+            "description": {"type": "string"},
+            "license": {"type": "string"},
             "git": {"type": "string"},
             "tags": {"type": "array"},
-            "required": ["name", "version", "ofversion"]
+            "required": ["name", "version", "ofversion", "license"]
     },
     "required": ["napp"]
 }
