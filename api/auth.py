@@ -30,10 +30,10 @@ def napps_auth():
         validate(content, common.napps_auth)
         user = content['login']
         password = common.hash_pass(content['password'])
-        current_user = common.Users(login=user)
+        current_user = common.User(login=user)
 
         if password == current_user.hash_pass:
-            user_new_token = common.Tokens.token_gen(current_user.login)
+            user_new_token = common.Token.token_gen(current_user.login)
             return jsonify(user_new_token), 200
         else:
             return '', 401
