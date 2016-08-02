@@ -3,11 +3,14 @@
 # Third-party imports
 from flask import Blueprint
 from flask import jsonify
-
+from flask import request
+from jsonschema import validate
+from jsonschema import ValidationError
 
 # Local source tree imports
 import config
 from api import common
+
 
 # Flask Blueprints
 api = Blueprint('user_api', __name__)
@@ -65,3 +68,20 @@ def get_author(name):
     author["comments"] = len(get_redis_list(name, 'comments'))
 
     return jsonify({'author': author})
+
+
+@api.route("/api/register", methods=["POST"])
+def author_register():
+    """
+    This endpoing will be used to add new authors to the system.
+    :return: Return HTTP code 200 if user were succesfully registered or 409 (Conflict response code) in others cases.
+    """
+
+    content = request.get_json(silent=True)
+
+    try:
+        validate(content, common.napp_git_author)
+        return '', 200
+
+    except ValidationError:
+        return '', 400
