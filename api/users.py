@@ -70,7 +70,7 @@ def get_author(name):
     return jsonify({'author': author})
 
 
-@api.route("/api/register", methods=["POST"])
+@api.route("/api/authors/register", methods=["POST"])
 def author_register():
     """
     This endpoing will be used to add new authors to the system.
