@@ -52,7 +52,6 @@ napp_git_schema = {
 
 # JSON Schema to Add New Authors
 napp_git_author = {
-    "author": {
             "name": {"type": "string"},
             "pass": {"type": "string"},
             "email": {"type": "string"},
@@ -61,8 +60,6 @@ napp_git_author = {
             "state": {"type": "string"},
             "country": {"type": "string"},
             "required": ["name", "pass", "email", "country"]
-    },
-    "required": ["author"]
 }
 
 
