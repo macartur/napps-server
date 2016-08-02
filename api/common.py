@@ -50,6 +50,21 @@ napp_git_schema = {
     "required": ["napp"]
 }
 
+# JSON Schema to Add New Authors
+napp_git_author = {
+    "author": {
+            "name": {"type": "string"},
+            "pass": {"type": "string"},
+            "email": {"type": "string"},
+            "phone": {"type": "string"},
+            "city": {"type": "string"},
+            "state": {"type": "string"},
+            "country": {"type": "string"},
+            "required": ["name", "pass", "email", "country"]
+    },
+    "required": ["author"]
+}
+
 
 def get_token_key (login):
     """
