@@ -32,6 +32,37 @@ def get_apps(author_name):
     return author_napps
 
 
+def add_user(author_json):
+
+    author_key = "author:"+ author_json["login"]
+
+    if not con.sismember("authors", author_key):
+        author_apps_key = author_key + ":apps"
+        author_comment_key = author_key + ":comments"
+        author_token_key = author_key + ":tokens"
+
+        author_json = {
+            "login": author_json["login"],
+            "name": author_json["name"],
+            "pass": common.hash_pass(author_json["pass"]),
+            "email": author_json["email"],
+            "phone": author_json["phone"],
+            "city": author_json["city"],
+            "state": author_json["state"],
+            "country": author_json["country"],
+            "timezone": author_json["timezone"],
+            "apps": author_apps_key,
+            "comments": author_comment_key,
+            "token": author_token_key,
+            "status": "inactive"
+        }
+        con.sadd("authors", author_key)
+        con.hmset(author_key, author_json)
+        return 0
+    else:
+        return 5
+
+
 def get_redis_list(name, key):
      return list(con.smembers(con.hget(name,key)))
 
@@ -81,6 +112,8 @@ def author_register():
 
     try:
         validate(content, common.napp_git_author)
+        a = add_user(content)
+        print(a)
         return '', 200
 
     except ValidationError:
