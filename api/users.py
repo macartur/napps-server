@@ -58,9 +58,9 @@ def add_user(author_json):
         }
         con.sadd("authors", author_key)
         con.hmset(author_key, author_json)
-        return 0
+        return True
     else:
-        return 5
+        return False
 
 
 def get_redis_list(name, key):
@@ -112,9 +112,10 @@ def author_register():
 
     try:
         validate(content, common.napp_git_author)
-        a = add_user(content)
-        print(a)
-        return '', 200
+        if add_user(content):
+            return '', 200
+        else:
+            return '', 409
 
     except ValidationError:
         return '', 400
