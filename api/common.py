@@ -175,8 +175,11 @@ class Token:
     Class to manage Tokens
     """
 
-    def __init__(self, token_id=None):
+    def __init__(self, token_exp_time, token_gen_time, token_id=None, token_type="Auth"):
         self.__token_id = token_id
+        self.__token_exp_time = token_exp_time
+        self.__token_gen_time = token_gen_time
+        self.__token_type = token_type
 
     @property
     def token_id(self):
