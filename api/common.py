@@ -197,33 +197,6 @@ class Token:
     def token_type(self):
         return self.__token_type
 
-    def token_valid(self):
-        """
-        This method verifies if a given token is already expired or not.
-        :return: False if token is expired or remaining time to expiration in seconds.
-        """
-        if self.token_id is not None and self.token_exist():
-            curr_time = int(time.time())
-
-            # Retrieve the token data
-            token_to_validate = con.hgetall(self.token_id)
-
-            time_to_expire = int(token_to_validate['expire']) - curr_time
-            if time_to_expire <= 0:
-                return False
-            else:
-                return time_to_expire
-        else:
-            return False
-
-    def token_exist(self):
-        """
-        This method checks if token exists in REDIs
-        :return: True if token exists or false if not
-        """
-        token_dict = con.hgetall(self.token_id)
-        return any(token_dict)
-
     def token_to_login(self):
         """
         This method returns the user login given a specific token
