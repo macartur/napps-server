@@ -120,18 +120,6 @@ class User:
     def __init__(self, login):
         self.__login = login
 
-    def has_token(self, token):
-        """
-        This method verifies if a given token is owned by the user.
-        :param token: The token to be checked
-        :return: True if token is owned by the user or false if not
-        """
-
-        token_key = get_token_key(self.login)
-        if con.sismember(token_key, token):
-            return True
-        return False
-
     @property
     def login(self):
         """
@@ -160,6 +148,18 @@ class User:
             return True
         else:
             return False
+
+    def own_token(self, token):
+        """
+        This method verifies if a given token is owned by the user.
+        :param token: The token to be checked
+        :return: True if token is owned by the user or false if not
+        """
+
+        token_key = get_token_key(self.login)
+        if con.sismember(token_key, token):
+            return True
+        return False
 
     def user_role(self):
         """
