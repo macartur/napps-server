@@ -185,6 +185,18 @@ class Token:
     def token_id(self):
         return self.__token_id
 
+    @property
+    def token_exp_time(self):
+        return int(self.__token_exp_time)
+
+    @property
+    def token_gen_time(self):
+        return int(self.__token_gen_time)
+
+    @property
+    def token_type(self):
+        return self.__token_type
+
     def token_valid(self):
         """
         This method verifies if a given token is already expired or not.
