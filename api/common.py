@@ -227,10 +227,6 @@ class Token:
     def token_to_login(self):
         """
         This method returns the user login given a specific token
-        :return: Login of the token owner or None if token doesnt exist.
+        :return: Login of the token owner
         """
-        if self.token_id is not None and self.token_exist():
-            token_to_translate = con.hgetall(self.token_id)
-            return token_to_translate['login']
-        else:
-            return None
+        return con.hget(self.token_id, "login")
