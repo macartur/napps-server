@@ -197,6 +197,24 @@ class Token:
     def token_type(self):
         return self.__token_type
 
+    def token_store(self, login=None):
+        """
+        This method stores current token in REDIS for a user
+        :return: True if token was stored or False other case
+        """
+        token_key = get_token_key(login)
+        if token_key is not None and login is not None:
+            con.sadd(token_key, self.token_id)
+            token_dict = {
+                'login': login,
+                'expire': self.token_exp_time,
+                'creation': self.token_gen_time
+            }
+            con.hmset(self.token_id, token_dict)
+            return True
+        else:
+            return False
+
     def token_to_login(self):
         """
         This method returns the user login given a specific token
