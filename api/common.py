@@ -64,6 +64,30 @@ napp_git_author = {
 }
 
 
+def token_gen(type):
+    """
+    Routine to generate a token of a given type
+    :param type: Can be Auth or Validation token
+    :return: A token object
+    """
+    if type is "Auth":
+        token_expiration_sec = 900
+    elif type is "Validation":
+        token_expiration_sec = 86400
+    else:
+        return False
+
+    gen_time = int(time.time())
+    token_expiration = int(time.time()) + token_expiration_sec
+    new_hash = hashlib.sha256(os.urandom(128)).hexdigest()
+
+    new_token = Token(token_exp_time=token_expiration,
+                      token_gen_time=gen_time,
+                      token_id=new_hash,
+                      token_type=type)
+    return new_token
+
+
 def get_token_key (login):
     """
     Returns the token key of a given user
@@ -157,29 +181,6 @@ class Token:
     @property
     def token_id(self):
         return self.__token_id
-
-    def token_gen(login):
-        """
-        Generates a new 256 bits token and store it in REDIs
-        :param login: User's login to store the token
-        :return: a tuple with token and expiration epoch
-        """
-        new_hash = hashlib.sha256(os.urandom(128)).hexdigest()
-        gen_time = int(time.time())
-        token_expiration = int(time.time()) + 900
-
-        # Token key in redis is the token itself
-        token_key = get_token_key(login)
-        if token_key is not None:
-            con.sadd(token_key, new_hash)
-            token_hash = {'login': login,
-                          'expire': token_expiration,
-                          'creation': gen_time}
-            con.hmset(new_hash, token_hash)
-        else:
-            return None
-
-        return {"token": new_hash, "expiration": token_expiration}
 
     def token_valid(self):
         """
