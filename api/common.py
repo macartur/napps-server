@@ -215,6 +215,19 @@ class Token:
         else:
             return False
 
+    def time_to_expire(self):
+        """
+        This method verifies remaining time (in sec) to token expire
+        :return: Remaining time to expire. If token is expired, returns zero
+        """
+        current_time = int(time.time())
+        time_to_expire = self.token_exp_time - current_time
+
+        if time_to_expire <= 0:
+            return 0
+        else:
+            return time_to_expire
+
     def token_to_login(self):
         """
         This method returns the user login given a specific token
