@@ -3,7 +3,6 @@
 # Third-party imports
 from flask import Blueprint
 from flask import request
-from flask import jsonify
 from jsonschema import validate
 from jsonschema import ValidationError
 
