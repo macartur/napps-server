@@ -22,7 +22,7 @@ api = Blueprint('auth_api', __name__)
 def napps_auth():
     """
     Endpoint to perform the authentication
-    :return: A token to the user and the expiration time (epoch)
+    :return: A token to the user
     """
     content = request.get_json(silent=True)
 
@@ -32,11 +32,11 @@ def napps_auth():
         password = common.hash_pass(content['password'])
         current_user = common.User(login=user)
 
-        if password == current_user.hash_pass:
-            user_new_token = common.Token.token_gen(current_user.login)
-            return jsonify(user_new_token), 200
+        if password == current_user.hash_pass and current_user.is_active:
+            user_new_token = common.token_gen("Auth")
+            user_new_token.token_store(user)
+            return user_new_token.token_id, 200
         else:
             return '', 401
-
     except ValidationError:
         return '', 400
