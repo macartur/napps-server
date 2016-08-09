@@ -158,7 +158,6 @@ def get_apps():
                                      token_type="Auth")
                 current_user = common.User(login=current_token.token_to_login)
                 if current_token.time_to_expire() > 0:
-                    print(current_user.login)
                     ret = napp_git_download(content['git'], current_user.login())
                     return '', ret
                 else:
