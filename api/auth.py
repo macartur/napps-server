@@ -39,3 +39,26 @@ def napps_auth():
             return '', 401
     except ValidationError:
         return '', 400
+
+
+@api.route("/api/confirm/<token>", methods=["GET"])
+def confirm_auth(token):
+    """
+    Endpoint to change an inactive user to active
+    :param token: A token of type "Validation"
+    :return: Code 200 if activation was successfully or an Error (4xx) code otherwise
+    """
+    stored_token = con.hgetall(token)
+    register_token = common.Token(token_exp_time=stored_token["expire"],
+                                  token_id=token,
+                                  token_gen_time=stored_token["creation"],
+                                  token_type=stored_token["type"]
+                                  )
+    register_user = common.User(login=register_token.token_to_login())
+
+    if register_token.token_type is "Validation" and not register_user.is_active:
+        author_key = "author:"+ register_user.login
+        con.hset(author_key, "status", "active")
+        return '', 200
+    else:
+        return '', 401
