@@ -208,7 +208,8 @@ class Token:
             token_dict = {
                 'login': login,
                 'expire': self.token_exp_time,
-                'creation': self.token_gen_time
+                'creation': self.token_gen_time,
+                'type': self.token_type
             }
             con.hmset(self.token_id, token_dict)
             return True
