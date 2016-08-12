@@ -48,6 +48,7 @@ def confirm_auth(token):
     :param token: A token of type "Validation"
     :return: Code 200 if activation was successfully or an Error (4xx) code otherwise
     """
+
     stored_token = con.hgetall(token)
     register_token = common.Token(token_exp_time=stored_token["expire"],
                                   token_id=token,
@@ -55,8 +56,7 @@ def confirm_auth(token):
                                   token_type=stored_token["type"]
                                   )
     register_user = common.User(login=register_token.token_to_login())
-
-    if register_token.token_type is "Validation" and not register_user.is_active:
+    if register_token.token_type == "Validation" and register_user.is_active is False:
         author_key = "author:"+ register_user.login
         con.hset(author_key, "status", "active")
         return '', 200
