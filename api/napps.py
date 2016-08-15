@@ -100,6 +100,12 @@ def napp_git_download(git_url, login):
         for ofversion in list(napp_json["napp"]["ofversion"]):
             con.sadd(ofversions_key, ofversion)
 
+        # Add napp key to the user (author must exist)
+        if con.sismember("authors", author_key):
+            con.sadd(author_napps_key, napp_key)
+        else:
+            return 401
+
         return 200
 
     else:
