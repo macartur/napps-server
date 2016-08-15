@@ -29,7 +29,7 @@ def get_author(app_name):
     :param app_name: name of the napp to retrieve author data
     :return: return a dict with author's data
     """
-    exclude = ['phone', 'pass', 'email', 'comments', 'apps', 'tokens', 'role']
+    exclude = ['phone', 'pass', 'email', 'comments', 'apps', 'token', 'role']
     author = con.hgetall(con.hget(app_name, "author"))
 
     for item in exclude:

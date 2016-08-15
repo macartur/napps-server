@@ -19,7 +19,7 @@ con = config.CON
 
 
 def get_apps(author_name):
-    exclude = ['author', 'tags', 'comments', 'license', 'description']
+    exclude = ['author', 'tags', 'comments', 'license', 'description', 'token']
 
     author_napps = {}
     author_key = "author:"+author_name
