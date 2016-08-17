@@ -18,7 +18,7 @@ class TokenExpired(Exception):
 
 
     def __str__(self):
-        return "'{}': Token Expired.".format(self.token_id)
+        return 401  # Unauthorized
 
 
 class TokenDoesNotExist(Exception):
@@ -36,4 +36,4 @@ class TokenDoesNotExist(Exception):
         self.token_id = token_id
 
     def __str__(self):
-        return "'{}': Token does not Exist.".format(self.token_id)
+        return 404  # Resource doesnt exist
