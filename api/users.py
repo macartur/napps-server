@@ -84,7 +84,7 @@ def get_authors():
         author["comments"] = len(get_redis_list(name, 'comments'))
         authors[name] = author
 
-    return jsonify({'authors': authors})
+    return jsonify({'authors': authors}), common.SuccessCodes.OK.value
 
 
 @api.route('/api/authors/<name>', methods=['GET'])
@@ -98,7 +98,7 @@ def get_author(name):
     author["apps"] = get_apps(name)
     author["comments"] = len(get_redis_list(name, 'comments'))
 
-    return jsonify({'author': author})
+    return jsonify({'author': author}), common.SuccessCodes.OK.value
 
 
 @api.route("/api/authors/register", methods=["POST"])
@@ -116,9 +116,9 @@ def author_register():
         if add_user(content):
             auth_token = common.token_gen("Validation")
             auth_token.token_store(login=content["login"])
-            return auth_token.token_id, 200
+            return auth_token.token_id, common.SuccessCodes.OK.value
         else:
-            return '', 409
+            return '', common.ServerErrorCodes.INTERNAL_SERVER_ERROR.value
 
     except ValidationError:
-        return '', 400
+        return '', common.ClientErrorCodes.BAD_REQUEST.value
