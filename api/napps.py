@@ -104,12 +104,12 @@ def napp_git_download(git_url, login):
         if con.sismember("authors", author_key):
             con.sadd(author_napps_key, napp_key)
         else:
-            return 401
+            return common.ClientErrorCodes.UNAUTHORIZED.value
 
-        return 200
+        return common.SuccessCodes.OK.value
 
     else:
-        return 401
+        return common.ClientErrorCodes.UNAUTHORIZED.value
 
 
 # Endpoints Definitions
@@ -129,7 +129,7 @@ def get_app(name):
     app["versions"] = get_redis_list(app_key, "versions")
     app["comments"] = con.scard(con.hget(name, "comments"))
 
-    return jsonify({'napp': app})
+    return jsonify({'napp': app}), common.SuccessCodes.OK.value
 
 
 @api.route('/api/napps/', methods=['GET', 'POST'])
@@ -148,14 +148,14 @@ def get_apps():
             app["comments"] = con.scard(con.hget(name, "comments"))
             apps[name] = app
 
-        return jsonify({'napps': apps})
+        return jsonify({'napps': apps}), common.SuccessCodes.OK.value
 
     elif request.method == "POST":
         content = request.get_json(silent=True)
         try:
             validate(content, common.napps_schema)
             if len(con.keys(content['token'])) == 0:
-                return '', 400
+                return '', common.ClientErrorCodes.BAD_REQUEST.value
             else:
                 author_token_dict = con.hgetall(content['token'])
                 current_token = common.Token(token_id=content['token'],
@@ -167,6 +167,6 @@ def get_apps():
                     ret = napp_git_download(content['git'], current_user.login())
                     return '', ret
                 else:
-                    return '', 400
+                    return '', common.ClientErrorCodes.UNAUTHORIZED.value
         except ValidationError:
-            return '', 400
+            return '', common.ClientErrorCodes.BAD_REQUEST.value
