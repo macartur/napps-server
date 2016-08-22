@@ -93,11 +93,11 @@ def napp_git_download(git_url, login):
             con.sadd(napp_tags_key, tag)
 
         # Add version
-        for version in list(napp_json["napp"]["version"]):
+        for version in napp_json["napp"]["version"].splitlines():
             con.sadd(napp_versions_key, version)
 
         # Add ofversion
-        for ofversion in list(napp_json["napp"]["ofversion"]):
+        for ofversion in napp_json["napp"]["ofversion"].splitlines():
             con.sadd(ofversions_key, ofversion)
 
         # Add napp key to the user (author must exist)
