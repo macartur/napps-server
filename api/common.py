@@ -26,7 +26,7 @@ admin_permission = Permission(RoleNeed('admin'))
 # JSON Schema for Napps
 napps_schema = {
     "git": {"type": "string"},
-    "token":  {"type" : "string"},
+    "token":  {"type": "string"},
     "required": ["git", "token"]}
 
 # JSON Schema for authentication

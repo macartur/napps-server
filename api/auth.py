@@ -57,7 +57,7 @@ def confirm_auth(token):
                                   )
     register_user = common.User(login=register_token.token_to_login())
     if register_token.token_type == "Validation" and register_user.is_active is False:
-        author_key = "author:"+ register_user.login
+        author_key = "author:" + register_user.login
         con.hset(author_key, "status", "active")
         return '', common.SuccessCodes.OK.value
     else:

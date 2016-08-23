@@ -2,6 +2,7 @@
 Exceptions raised by napps-server
 """
 
+
 class TokenExpired(Exception):
     """
     Used when the token is expired and a new authentication is required in order to proceed.
@@ -15,7 +16,6 @@ class TokenExpired(Exception):
 
         super().__init__()
         self.token_id = token_id
-
 
     def __str__(self):
         return 401  # Unauthorized
