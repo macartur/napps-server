@@ -6,3 +6,4 @@ urllib5
 requests
 jsonschema
 pytz
+redis
