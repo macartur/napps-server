@@ -23,10 +23,10 @@ def get_apps(author_name):
 
     author_napps = {}
     author_key = "author:"+author_name
-    for apps in get_redis_list(author_key,'apps'):
+    for apps in get_redis_list(author_key, 'apps'):
         author_napps[apps] = con.hgetall('app:'+apps)
-        author_napps[apps]['ofversions'] = get_redis_list(apps,"ofversions")
-        author_napps[apps]['versions'] = get_redis_list(apps,"versions")
+        author_napps[apps]['ofversions'] = get_redis_list(apps, "ofversions")
+        author_napps[apps]['versions'] = get_redis_list(apps, "versions")
         for item in exclude:
             author_napps[apps].pop(item, None)
     return author_napps
@@ -64,7 +64,7 @@ def add_user(author_json):
 
 
 def get_redis_list(name, key):
-     return list(con.smembers(con.hget(name,key)))
+    return list(con.smembers(con.hget(name, key)))
 
 
 @api.route('/api/authors', methods=['GET'])
