@@ -148,11 +148,17 @@ def get_apps():
         content = request.get_json(silent=True)
         try:
             validate(content, common.napps_schema)
-            token_sent = common.Token(token_id=content['token'])
-            if token_sent.token_exist():
-                current_user = common.User(login=token_sent.token_to_login())
-                if token_sent.token_valid() and current_user.is_active:
-                    ret = napp_git_download(content['git'], current_user.login)
+            if len(con.keys(content['token'])) == 0:
+                return '', 400
+            else:
+                author_token_dict = con.hgetall(content['token'])
+                current_token = common.Token(token_id=content['token'],
+                                     token_exp_time=author_token_dict['expire'],
+                                     token_gen_time=author_token_dict['creation'],
+                                     token_type="Auth")
+                current_user = common.User(login=current_token.token_to_login)
+                if current_token.time_to_expire() > 0:
+                    ret = napp_git_download(content['git'], current_user.login())
                     return '', ret
                 else:
                     return '', 400

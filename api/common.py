@@ -64,6 +64,30 @@ napp_git_author = {
 }
 
 
+def token_gen(type):
+    """
+    Routine to generate a token of a given type
+    :param type: Can be Auth or Validation token
+    :return: A token object
+    """
+    if type is "Auth":
+        token_expiration_sec = 900
+    elif type is "Validation":
+        token_expiration_sec = 86400
+    else:
+        return False
+
+    gen_time = int(time.time())
+    token_expiration = int(time.time()) + token_expiration_sec
+    new_hash = hashlib.sha256(os.urandom(128)).hexdigest()
+
+    new_token = Token(token_exp_time=token_expiration,
+                      token_gen_time=gen_time,
+                      token_id=new_hash,
+                      token_type=type)
+    return new_token
+
+
 def get_token_key (login):
     """
     Returns the token key of a given user
@@ -96,18 +120,6 @@ class User:
     def __init__(self, login):
         self.__login = login
 
-    def has_token(self, token):
-        """
-        This method verifies if a given token is owned by the user.
-        :param token: The token to be checked
-        :return: True if token is owned by the user or false if not
-        """
-
-        token_key = get_token_key(self.login)
-        if con.sismember(token_key, token):
-            return True
-        return False
-
     @property
     def login(self):
         """
@@ -137,6 +149,18 @@ class User:
         else:
             return False
 
+    def own_token(self, token):
+        """
+        This method verifies if a given token is owned by the user.
+        :param token: The token to be checked
+        :return: True if token is owned by the user or false if not
+        """
+
+        token_key = get_token_key(self.login)
+        if con.sismember(token_key, token):
+            return True
+        return False
+
     def user_role(self):
         """
         This method returns the role of a given user in system
@@ -151,70 +175,62 @@ class Token:
     Class to manage Tokens
     """
 
-    def __init__(self, token_id=None):
+    def __init__(self, token_exp_time, token_gen_time, token_id=None, token_type="Auth"):
         self.__token_id = token_id
+        self.__token_exp_time = token_exp_time
+        self.__token_gen_time = token_gen_time
+        self.__token_type = token_type
 
     @property
     def token_id(self):
         return self.__token_id
 
-    def token_gen(login):
-        """
-        Generates a new 256 bits token and store it in REDIs
-        :param login: User's login to store the token
-        :return: a tuple with token and expiration epoch
-        """
-        new_hash = hashlib.sha256(os.urandom(128)).hexdigest()
-        gen_time = int(time.time())
-        token_expiration = int(time.time()) + 900
+    @property
+    def token_exp_time(self):
+        return int(self.__token_exp_time)
 
-        # Token key in redis is the token itself
+    @property
+    def token_gen_time(self):
+        return int(self.__token_gen_time)
+
+    @property
+    def token_type(self):
+        return self.__token_type
+
+    def token_store(self, login=None):
+        """
+        This method stores current token in REDIS for a user
+        :return: True if token was stored or False other case
+        """
         token_key = get_token_key(login)
-        if token_key is not None:
-            con.sadd(token_key, new_hash)
-            token_hash = {'login': login,
-                          'expire': token_expiration,
-                          'creation': gen_time}
-            con.hmset(new_hash, token_hash)
-        else:
-            return None
-
-        return {"token": new_hash, "expiration": token_expiration}
-
-    def token_valid(self):
-        """
-        This method verifies if a given token is already expired or not.
-        :return: False if token is expired or remaining time to expiration in seconds.
-        """
-        if self.token_id is not None and self.token_exist():
-            curr_time = int(time.time())
-
-            # Retrieve the token data
-            token_to_validate = con.hgetall(self.token_id)
-
-            time_to_expire = int(token_to_validate['expire']) - curr_time
-            if time_to_expire <= 0:
-                return False
-            else:
-                return time_to_expire
+        if token_key is not None and login is not None:
+            con.sadd(token_key, self.token_id)
+            token_dict = {
+                'login': login,
+                'expire': self.token_exp_time,
+                'creation': self.token_gen_time
+            }
+            con.hmset(self.token_id, token_dict)
+            return True
         else:
             return False
 
-    def token_exist(self):
+    def time_to_expire(self):
         """
-        This method checks if token exists in REDIs
-        :return: True if token exists or false if not
+        This method verifies remaining time (in sec) to token expire
+        :return: Remaining time to expire. If token is expired, returns zero
         """
-        token_dict = con.hgetall(self.token_id)
-        return any(token_dict)
+        current_time = int(time.time())
+        time_to_expire = self.token_exp_time - current_time
+
+        if time_to_expire <= 0:
+            return 0
+        else:
+            return time_to_expire
 
     def token_to_login(self):
         """
         This method returns the user login given a specific token
-        :return: Login of the token owner or None if token doesnt exist.
+        :return: Login of the token owner
         """
-        if self.token_id is not None and self.token_exist():
-            token_to_translate = con.hgetall(self.token_id)
-            return token_to_translate['login']
-        else:
-            return None
+        return con.hget(self.token_id, "login")
