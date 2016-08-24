@@ -64,15 +64,15 @@ napp_git_author = {
 }
 
 
-def token_gen(type):
+def token_gen(token_type):
     """
     Routine to generate a token of a given type
-    :param type: Can be Auth or Validation token
+    :param token_type: Can be Auth or Validation token
     :return: A token object
     """
-    if type is "Auth":
+    if token_type is "Auth":
         token_expiration_sec = 900
-    elif type is "Validation":
+    elif token_type is "Validation":
         token_expiration_sec = 86400
     else:
         return False
@@ -84,20 +84,19 @@ def token_gen(type):
     new_token = Token(token_exp_time=token_expiration,
                       token_gen_time=gen_time,
                       token_id=new_hash,
-                      token_type=type)
+                      token_type=token_type)
     return new_token
 
 
-def get_token_key (login):
+def get_token_key(login):
     """
     Returns the token key of a given user
     :param login: login name to check
     :return: Key in REDIS or None if user or key do not exist.
     """
     user_key = "author:"+login
-
     if con.sismember("authors", user_key):
-        user_token_key = con.hget(user_key, "tokens")
+        user_token_key = con.hget(user_key, "token")
         return user_token_key
     else:
         return None
@@ -197,7 +196,7 @@ class Token:
     def token_type(self):
         return self.__token_type
 
-    def token_store(self, login=None):
+    def token_store(self, login):
         """
         This method stores current token in REDIS for a user
         :return: True if token was stored or False other case
@@ -208,7 +207,8 @@ class Token:
             token_dict = {
                 'login': login,
                 'expire': self.token_exp_time,
-                'creation': self.token_gen_time
+                'creation': self.token_gen_time,
+                'type': self.token_type
             }
             con.hmset(self.token_id, token_dict)
             return True

@@ -19,7 +19,7 @@ con = config.CON
 
 
 def get_apps(author_name):
-    exclude = ['author', 'tags', 'comments', 'license', 'description']
+    exclude = ['author', 'tags', 'comments', 'license', 'description', 'token']
 
     author_napps = {}
     author_key = "author:"+author_name
@@ -34,7 +34,7 @@ def get_apps(author_name):
 
 def add_user(author_json):
 
-    author_key = "author:"+ author_json["login"]
+    author_key = "author:" + author_json["login"]
 
     if not con.sismember("authors", author_key):
         author_apps_key = author_key + ":apps"
@@ -105,7 +105,8 @@ def get_author(name):
 def author_register():
     """
     This endpoing will be used to add new authors to the system.
-    :return: Return HTTP code 200 if user were succesfully registered or 409 (Conflict response code) in others cases.
+    :return: Return HTTP code 200 if user were succesfully and the Validation Token or 409 (Conflict
+    response code) in others cases.
     """
 
     content = request.get_json(silent=True)
@@ -113,7 +114,9 @@ def author_register():
     try:
         validate(content, common.napp_git_author)
         if add_user(content):
-            return '', 200
+            auth_token = common.token_gen("Validation")
+            auth_token.token_store(login=content["login"])
+            return auth_token.token_id, 200
         else:
             return '', 409
 

@@ -29,9 +29,9 @@ SADD author:emonkey:apps "l2learning"
 SADD author:emonkey:comments "comment:firewall:1" "comment:machineLearning:1"
 SADD author:emonkey:tokens "token_AA" "token_AB" "token_AC"
 
-HMSET token_AA "login" "emonkey" "expire" "1471809444" "creation" "1471809400"
-HMSET token_AB "login" "emonkey" "expire" "1469217444" "creation" "1469217400"
-HMSET token_AC "login" "emonkey" "expire" "1466625444" "creation" "1466625400"
+HMSET token_AA "login" "emonkey" "expire" "1471809444" "creation" "1471809400" "type" "Auth"
+HMSET token_AB "login" "emonkey" "expire" "1469217444" "creation" "1469217400" "type" "Auth"
+HMSET token_AC "login" "emonkey" "expire" "1466625444" "creation" "1466625400" "type" "Auth"
 
 HMSET author:bart "name" "Bart Simpson" "pass" "1a9e2d31381aec750424a694319af7a9" "email" "bart@hotmail.com" "phone" "+1 555-2121" "city" "New Jersey" "state" "NY" "country" "US" "timezone" "GMT-2" "apps" "author:bart:apps" "comments" "author:bart:comments" "role" "user" "tokens" "author:bart:tokens" "status" "active"
 
@@ -39,9 +39,9 @@ SADD author:bart:apps "machineLearning"
 SADD author:bart:comments "comment:firewall:1" "comment:l2learning:1"
 SADD author:bart:tokens "token_BA" "token_BB" "token_BC"
 
-HMSET token_BA "login" "bart" "expire" "1471809444" "creation" "1471809400"
-HMSET token_BB "login" "bart" "expire" "1469217444" "creation" "1469217400"
-HMSET token_BC "login" "bart" "expire" "1466625444" "creation" "1466625400"
+HMSET token_BA "login" "bart" "expire" "1471809444" "creation" "1471809400" "type" "Auth"
+HMSET token_BB "login" "bart" "expire" "1469217444" "creation" "1469217400" "type" "Auth"
+HMSET token_BC "login" "bart" "expire" "1466625444" "creation" "1466625400" "type" "Auth"
 
 HMSET author:pecanha "name" "Eddie Carmona" "pass" "e354a9f107c3c8a6d42d78a4fbcb236c" "email" "pecanharules@ig.com.br" "phone" "+55 13 444-2323" "city" "Santos" "state" "SP" "country" "Brazil" "timezone" "GMT-3" "apps" "author:pecanha:apps" "comments" "author:pecanha:comments" "role" "admin" "tokens" "author:pecanha:tokens" "status" "active"
 
@@ -49,9 +49,9 @@ SADD author:pecanha:apps "firewall"
 SADD author:pecanha:comments "comment:l2learning:2"
 SADD author:pecanha:tokens "token_CA" "token_CB" "token_CC"
 
-HMSET token_CA "login" "pecanha" "expire" "1471809444" "creation" "1471809400"
-HMSET token_CB "login" "pecanha" "expire" "1469217444" "creation" "1469217400"
-HMSET token_CC "login" "pecanha" "expire" "1466625444" "creation" "1466625400"
+HMSET token_CA "login" "pecanha" "expire" "1471809444" "creation" "1471809400" "type" "Auth"
+HMSET token_CB "login" "pecanha" "expire" "1469217444" "creation" "1469217400" "type" "Auth"
+HMSET token_CC "login" "pecanha" "expire" "1466625444" "creation" "1466625400" "type" "Auth"
 
 HMSET comment:firewall:1 "author" "author:emonkey" "datetime" "201608070815" "comment" "It is a good appl" "rating" "3"
 HMSET comment:firewall:2 "author" "author:bart" "datetime" "201628031728" "comment" "Some bugs to correct" "rating" "2"

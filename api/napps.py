@@ -29,7 +29,7 @@ def get_author(app_name):
     :param app_name: name of the napp to retrieve author data
     :return: return a dict with author's data
     """
-    exclude = ['phone', 'pass', 'email', 'comments', 'apps', 'tokens', 'role']
+    exclude = ['phone', 'pass', 'email', 'comments', 'apps', 'token', 'role']
     author = con.hgetall(con.hget(app_name, "author"))
 
     for item in exclude:
@@ -99,6 +99,12 @@ def napp_git_download(git_url, login):
         # Add ofversion
         for ofversion in list(napp_json["napp"]["ofversion"]):
             con.sadd(ofversions_key, ofversion)
+
+        # Add napp key to the user (author must exist)
+        if con.sismember("authors", author_key):
+            con.sadd(author_napps_key, napp_key)
+        else:
+            return 401
 
         return 200
 
