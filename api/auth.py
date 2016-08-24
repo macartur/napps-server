@@ -34,7 +34,7 @@ def napps_auth():
 
         if password == current_user.hash_pass:
             user_new_token = common.Token.token_gen(current_user.login)
-            return jsonify(user_new_token)
+            return jsonify(user_new_token), 200
         else:
             return '', 401
 
