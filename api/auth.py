@@ -34,11 +34,11 @@ def napps_auth():
         if password == current_user.hash_pass and current_user.is_active:
             user_new_token = common.token_gen("Auth")
             user_new_token.token_store(user)
-            return user_new_token.token_id, 200
+            return user_new_token.token_id, common.SuccessCodes.OK.value
         else:
-            return '', 401
+            return '', common.ClientErrorCodes.UNAUTHORIZED.value
     except ValidationError:
-        return '', 400
+        return '', common.ClientErrorCodes.BAD_REQUEST.value
 
 
 @api.route("/api/confirm/<token>", methods=["GET"])
@@ -59,6 +59,6 @@ def confirm_auth(token):
     if register_token.token_type == "Validation" and register_user.is_active is False:
         author_key = "author:"+ register_user.login
         con.hset(author_key, "status", "active")
-        return '', 200
+        return '', common.SuccessCodes.OK.value
     else:
-        return '', 401
+        return '', common.ClientErrorCodes.UNAUTHORIZED.value
