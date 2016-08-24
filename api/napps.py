@@ -157,4 +157,4 @@ def get_apps():
                 else:
                     return '', 400
         except ValidationError:
-            return '', 401
+            return '', 400
