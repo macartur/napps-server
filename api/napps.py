@@ -6,6 +6,8 @@ from jsonschema import ValidationError
 from flask import Blueprint
 from flask import request
 from flask import jsonify
+import urllib
+import json
 
 
 # Local source tree imports
@@ -19,6 +21,7 @@ con = config.CON
 api = Blueprint('napps_api', __name__)
 
 # Routines
+
 
 def get_author(app_name):
     """
@@ -53,7 +56,55 @@ def napp_git_download(git_url, login):
     :param login: user login to be used to add the napp
     :return: 0 if all process worked fine
     """
-    return 0
+
+    url_to_download = git_url + "raw/master/kytos.json"
+    testfile = urllib.request.urlopen(url_to_download)
+    napp_json = json.loads(str(testfile.read(), encoding="utf-8"))
+
+    author_napps_key = "author:" + login + ":apps"
+
+    if not con.sismember(author_napps_key, napp_json["napp"]["name"]):
+        napp_key = "app:" + napp_json["napp"]["name"]
+
+        con.sadd("apps", napp_key)
+
+        # Generate some keys to be added in napp hash
+        comments_key = "app:" + napp_json["napp"]["name"] + ":comments"
+        ofversions_key = "app:" + napp_json["napp"]["name"] + ":ofversions"
+        author_key = "author:" + login
+        napp_versions_key = "app:" + napp_json["napp"]["name"] + ":versions"
+        napp_tags_key = "app:" + napp_json["napp"]["name"] + ":tags"
+
+        napp_redis_json = {
+            "name": napp_json["napp"]["name"],
+            "description": napp_json["napp"]["description"],
+            "license": napp_json["napp"]["license"],
+            "rating": "None",
+            "comments": comments_key,
+            "ofversions": ofversions_key,
+            "author": author_key,
+            "tags": napp_tags_key,
+            "versions": napp_versions_key
+        }
+        con.hmset(napp_key, napp_redis_json)
+
+        # Add tags
+        for tag in list(napp_json["napp"]["tags"]):
+            con.sadd(napp_tags_key, tag)
+
+        # Add version
+        for version in list(napp_json["napp"]["version"]):
+            con.sadd(napp_versions_key, version)
+
+        # Add ofversion
+        for ofversion in list(napp_json["napp"]["ofversion"]):
+            con.sadd(ofversions_key, ofversion)
+
+        return 200
+
+    else:
+        return 401
+
 
 # Endpoints Definitions
 
@@ -97,13 +148,13 @@ def get_apps():
         content = request.get_json(silent=True)
         try:
             validate(content, common.napps_schema)
-            token_sent = common.Tokens(token_id=content['token'])
-            current_user = common.Users(login=token_sent.token_to_login())
-
-            if token_sent.token_is_expired():
-                return '', 401
-            else:
-                napp_git_download(content['git'], current_user.login)
-                return '', 200
+            token_sent = common.Token(token_id=content['token'])
+            if token_sent.token_exist():
+                current_user = common.User(login=token_sent.token_to_login())
+                if token_sent.token_valid() and current_user.is_active:
+                    ret = napp_git_download(content['git'], current_user.login)
+                    return '', ret
+                else:
+                    return '', 400
         except ValidationError:
             return '', 400

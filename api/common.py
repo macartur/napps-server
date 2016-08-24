@@ -36,12 +36,19 @@ napps_auth = {
 
 # JSON Schema for Napps Description
 napp_git_schema = {
-    "name": {"type": "string"},
-    "description": {"type": "string"},
-    "license": {"type": "string"},
-    "ofversions": {"type": "string"},
-    "version": {"type": "string"},
-    "required": ["name", "license", "ofversions", "version"]}
+    "napp": {
+            "name": {"type": "string"},
+            "version": {"type": "string"},
+            "ofversion": {"type": "string"},
+            "dependencies": {"type": "string"},
+            "description": {"type": "string"},
+            "license": {"type": "string"},
+            "git": {"type": "string"},
+            "tags": {"type": "array"},
+            "required": ["name", "version", "ofversion", "license"]
+    },
+    "required": ["napp"]
+}
 
 
 def get_token_key (login):
@@ -69,7 +76,7 @@ def hash_pass(password):
     return hashlib.md5(salted_password.encode()).hexdigest()
 
 
-class Users:
+class User:
     """
     Class to manage Users
     """
@@ -105,6 +112,18 @@ class Users:
         author_key = "author:"+self.login
         return con.hget(author_key, "pass")
 
+    @property
+    def is_active(self):
+        """
+        This method verifies the status of a given user.
+        :return: True is user is active or False if not
+        """
+        author_key = "author:"+self.login
+        if con.hget(author_key, "status") == "active":
+            return True
+        else:
+            return False
+
     def user_role(self):
         """
         This method returns the role of a given user in system
@@ -114,7 +133,7 @@ class Users:
         return con.hget(author_key, "role")
 
 
-class Tokens:
+class Token:
     """
     Class to manage Tokens
     """
@@ -149,26 +168,40 @@ class Tokens:
 
         return {"token": new_hash, "expiration": token_expiration}
 
-    def token_is_expired(self):
+    def token_valid(self):
         """
         This method verifies if a given token is already expired or not.
-        :return: True if expired or an integer with seconds remaing to expire.
+        :return: False if token is expired or remaining time to expiration in seconds.
         """
-        curr_time = int(time.time())
+        if self.token_id is not None and self.token_exist():
+            curr_time = int(time.time())
 
-        # Retrieve the token data
-        token_to_validate = con.hgetall(self.token_id)
+            # Retrieve the token data
+            token_to_validate = con.hgetall(self.token_id)
 
-        time_to_expire = int(token_to_validate['expire']) - curr_time
-        if time_to_expire <= 0:
-            return True
+            time_to_expire = int(token_to_validate['expire']) - curr_time
+            if time_to_expire <= 0:
+                return False
+            else:
+                return time_to_expire
         else:
             return False
+
+    def token_exist(self):
+        """
+        This method checks if token exists in REDIs
+        :return: True if token exists or false if not
+        """
+        token_dict = con.hgetall(self.token_id)
+        return any(token_dict)
 
     def token_to_login(self):
         """
         This method returns the user login given a specific token
         :return: Login of the token owner or None if token doesnt exist.
         """
-        token_to_translate = con.hgetall(self.token_id)
-        return token_to_translate['login']
+        if self.token_id is not None and self.token_exist():
+            token_to_translate = con.hgetall(self.token_id)
+            return token_to_translate['login']
+        else:
+            return None
