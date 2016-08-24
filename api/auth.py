@@ -8,14 +8,13 @@ from jsonschema import ValidationError
 
 # Local source tree imports
 import config
+
 from api import common
 
 con = config.CON
 
-
 # Flask Blueprints
 api = Blueprint('auth_api', __name__)
-
 
 @api.route("/api/auth/", methods=["POST"])
 def napps_auth():
