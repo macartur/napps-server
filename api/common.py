@@ -1,14 +1,18 @@
 # System imports
+import enum
 import hashlib
+import json
 import os
 import time
-import enum
+
+from copy import copy
+
+from datetime import datetime
+from datetime import timedelta
 
 # Third-party imports
 from flask import Flask
 from itsdangerous import URLSafeTimedSerializer
-from flask.ext.principal import Permission
-from flask.ext.principal import RoleNeed
 
 # Local source tree imports
 import config
@@ -16,12 +20,6 @@ import config
 app = Flask(__name__)
 con = config.CON
 
-# Authentication
-app.secret_key = "a_random_secret_key_$%#!@"
-login_serializer = URLSafeTimedSerializer(app.secret_key)
-
-# Access Control
-admin_permission = Permission(RoleNeed('admin'))
 
 # JSON Schema for Napps
 napps_schema = {
@@ -65,109 +63,91 @@ napp_git_author = {
 }
 
 
-def token_gen(token_type):
-    """
-    Routine to generate a token of a given type
-    :param token_type: Can be Auth or Validation token
-    :return: A token object
-    """
-    if token_type is "Auth":
-        token_expiration_sec = 900
-    elif token_type is "Validation":
-        token_expiration_sec = 86400
-    else:
-        return False
 
-    gen_time = int(time.time())
-    token_expiration = int(time.time()) + token_expiration_sec
-    new_hash = hashlib.sha256(os.urandom(128)).hexdigest()
-
-    new_token = Token(token_exp_time=token_expiration,
-                      token_gen_time=gen_time,
-                      token_id=new_hash,
-                      token_type=token_type)
-    return new_token
-
-
-def get_token_key(login):
-    """
-    Returns the token key of a given user
-    :param login: login name to check
-    :return: Key in REDIS or None if user or key do not exist.
-    """
-    user_key = "author:"+login
-    if con.sismember("authors", user_key):
-        user_token_key = con.hget(user_key, "token")
-        return user_token_key
-    else:
-        return None
-
-
-def hash_pass(password):
-    """
-    Return the md5 hash of the password+salt
-    :param password: password to be converted
-    :return: password MD5
-    """
-    salted_password = password + app.secret_key
-    return hashlib.md5(salted_password.encode()).hexdigest()
-
-
-class User:
+class User(object):
     """
     Class to manage Users
     """
-    def __init__(self, login):
-        self.__login = login
+    def __init__(self, username, password, email, first_name, last_name,
+                 phone=None, city=None, state=None, country=None, enabled=False):
+        self.username = username
+        self.password = password # TODO: Crypt this
+        self.email = email
+        self.first_name = first_name
+        self.last_name = last_name
+        self.phone = phone
+        self.city = city
+        self.state = state
+        self.country = country
+        self.enabled = enabled
 
     @property
-    def login(self):
-        """
-        Returns the login name of the object
-        :return: User login
-        """
-        return self.__login
+    def redis_key(self):
+        return "author:%s" % self.username
 
     @property
-    def hash_pass(self):
-        """
-        This method returns the hashed password stored in redis
-        :return: Hashed password
-        """
-        author_key = "author:"+self.login
-        return con.hget(author_key, "pass")
-
-    @property
-    def is_active(self):
-        """
-        This method verifies the status of a given user.
-        :return: True is user is active or False if not
-        """
-        author_key = "author:"+self.login
-        if con.hget(author_key, "status") == "active":
-            return True
+    def token(self):
+        key = con.lrange("%s:tokens" % self.redis_key, 0, 0)[0]
+        attributes = con.hgetall(key)
+        token = Token()
+        token.hash = attributes['hash']
+        token.created_at = datetime.strptime(attributes['created_at'], '%Y-%m-%d %H:%M:%S.%f')
+        token.expires_at = datetime.strptime(attributes['expires_at'], '%Y-%m-%d %H:%M:%S.%f')
+        if token.is_valid():
+            return token
         else:
-            return False
+            return None
 
-    def own_token(self, token):
-        """
-        This method verifies if a given token is owned by the user.
-        :param token: The token to be checked
-        :return: True if token is owned by the user or false if not
-        """
+    @classmethod
+    def get(self, username):
+        user = con.hgetall("author:%s" % username)
+        if user:
+            # TODO: Fix this hardcode attributes
+            return User(user['username'], user['password'], user['email'],
+                        user['first_name'], user['last_name'], user['phone'],
+                        user['city'], user['state'], user['country'],
+                        eval(user['enabled']))
+        else:
+            raise NappsEntryDoesNotExists("Username not found.")
 
-        token_key = get_token_key(self.login)
-        if con.sismember(token_key, token):
-            return True
-        return False
+    def disable(self):
+        self.enabled = False
 
-    def user_role(self):
+    def enable(self):
+        self.enabled = True
+
+    def as_dict(self, hide_sensible=True, detailed=False):
+        result = copy(self.__dict__)
+        if hide_sensible:
+            del result['password']
+
+        if detailed:
+            result['apps'] = "%s:apps" % self.redis_key
+            result['comments'] = "%s:comments" % self.redis_key
+            result['tokens'] = "%s:tokens" % self.redis_key
+
+        return result
+
+    def as_json(self, hide_sensible=True, detailed=False):
+        return json.dumps(self.as_dict(hide_sensible, detailed))
+
+    def save(self):
+        """ Save a object into redis database.
+
+        This is a save/update method. If the user already exists then update.
         """
-        This method returns the role of a given user in system
-        :return: Role name (admin or user)
-        """
-        author_key = "author:"+self.login
-        return con.hget(author_key, "role")
+        con.sadd("authors", self.redis_key)
+        con.hmset(self.redis_key, self.as_dict(hide_sensible=False,
+                                               detailed=True))
+
+    def create_token(self, expiration_time=86400):
+        token = Token()
+        attributes = token.as_dict()
+        attributes['username'] = self.username
+
+        con.lpush("%s:tokens" % self.redis_key, "token:%s" % token.hash)
+        con.hmset("token:%s" % token.hash, attributes)
+        return token
 
 
 class Token:
@@ -175,94 +155,26 @@ class Token:
     Class to manage Tokens
     """
 
-    def __init__(self, token_exp_time, token_gen_time, token_id=None, token_type="Auth"):
-        self.__token_id = token_id
-        self.__token_exp_time = token_exp_time
-        self.__token_gen_time = token_gen_time
-        self.__token_type = token_type
+    def __init__(self, expiration_time=86400):
+        self.created_at = datetime.utcnow()
+        self.expires_at = self.created_at + timedelta(seconds=expiration_time)
+        self.hash = self.generate()
 
-    @property
-    def token_id(self):
-        return self.__token_id
+    def is_valid(self):
+        return datetime.utcnow() <= self.expires_at
 
-    @property
-    def token_exp_time(self):
-        return int(self.__token_exp_time)
+    def generate(self):
+        return hashlib.sha256(os.urandom(128)).hexdigest()
 
-    @property
-    def token_gen_time(self):
-        return int(self.__token_gen_time)
+    def as_dict(self):
+        return self.__dict__
 
-    @property
-    def token_type(self):
-        return self.__token_type
-
-    def token_store(self, login):
-        """
-        This method stores current token in REDIS for a user
-        :return: True if token was stored or False other case
-        """
-        token_key = get_token_key(login)
-        if token_key is not None and login is not None:
-            con.sadd(token_key, self.token_id)
-            token_dict = {
-                'login': login,
-                'expire': self.token_exp_time,
-                'creation': self.token_gen_time,
-                'type': self.token_type
-            }
-            con.hmset(self.token_id, token_dict)
-            return True
-        else:
-            return False
-
-    def time_to_expire(self):
-        """
-        This method verifies remaining time (in sec) to token expire
-        :return: Remaining time to expire. If token is expired, returns zero
-        """
-        current_time = int(time.time())
-        time_to_expire = self.token_exp_time - current_time
-
-        if time_to_expire <= 0:
-            return 0
-        else:
-            return time_to_expire
-
-    def token_to_login(self):
-        """
-        This method returns the user login given a specific token
-        :return: Login of the token owner
-        """
-        return con.hget(self.token_id, "login")
+    def as_json(self):
+        return json.dumps(self.as_dict())
 
 
-class ClientErrorCodes(enum.Enum):
-    """
-    Enumarate errors generated by Client Side - 4xx
-    """
-    BAD_REQUEST = 400
-    UNAUTHORIZED = 401
-    FORBIDDEN = 402
-    NOT_FOUND = 404
-    NOT_ACCEPTABLE = 406
-    REQUEST_TIMEOUT = 408
-    GONE = 410
+class NappsDuplicateEntry(Exception):
+    pass
 
-
-class ServerErrorCodes(enum.Enum):
-    """
-    Enumarate errors generated by Client Side - 5xx
-    """
-    INTERNAL_SERVER_ERROR = 500
-    NOT_IMPLEMENTED = 501
-    SERVICE_UNAVAILABLE = 503
-
-
-class SuccessCodes(enum.Enum):
-    """
-    Enumarate success codes - 2xx
-    """
-    OK = 200
-    CREATED = 201
-    ACCEPTED = 202
+class NappsEntryDoesNotExists(Exception):
+    pass
