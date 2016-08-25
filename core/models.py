@@ -89,6 +89,17 @@ class User(object):
         return [User.from_dict(con.hgetall(user)) for user in users]
 
     @classmethod
+    def check_auth(uself, username, password):
+        try:
+            user = User.get(username)
+        except NappsEntryDoesNotExists:
+            return False
+
+        if user.password != password:
+            return False
+        return True
+
+    @classmethod
     def from_dict(self, attributes):
         # TODO: Fix this hardcode attributes
         return User(attributes['username'], attributes['password'],
@@ -97,7 +108,6 @@ class User(object):
                     attributes['city'], attributes['state'],
                     attributes['country'], eval(attributes['enabled']))
 
-        return 
     def disable(self):
         self.enabled = False
         self.save()

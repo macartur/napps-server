@@ -5,7 +5,7 @@ from datetime import timedelta
 from flask import Flask
 
 # Local source tree imports
-#from api import auth
+from api import auth
 #from api import comments
 #from api import common
 #from api import napps
@@ -14,7 +14,7 @@ from api import users
 app = Flask(__name__)
 
 # Expose login and logout endpoints
-#common.app.register_blueprint(auth.api)
+app.register_blueprint(auth.api)
 
 # Expose user endpoints
 app.register_blueprint(users.api)
