@@ -8,6 +8,7 @@ import hashlib
 import json
 import os
 import smtplib
+from urllib.request import urlopen
 
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -17,6 +18,7 @@ from jinja2 import Template
 
 # Local source tree imports
 from core.exceptions import NappsEntryDoesNotExists
+from core.exceptions import InvalidNappMetaData
 
 con = config.CON
 
@@ -66,10 +68,7 @@ class User(object):
             return None
 
         attributes = con.hgetall(key)
-        token = Token()
-        token.hash = attributes['hash']
-        token.created_at = datetime.strptime(attributes['created_at'], '%Y-%m-%d %H:%M:%S.%f')
-        token.expires_at = datetime.strptime(attributes['expires_at'], '%Y-%m-%d %H:%M:%S.%f')
+        token = Token.from_dict(attributes)
         if token.is_valid():
             return token
         else:
@@ -110,6 +109,8 @@ class User(object):
 
     def disable(self):
         self.enabled = False
+        token = self.token
+        token.invalidate()
         self.save()
 
     def enable(self):
@@ -141,7 +142,7 @@ class User(object):
                                                detailed=True))
 
     def create_token(self, expiration_time=86400):
-        token = Token(username=self.username)
+        token = Token(user=self, expiration_time=expiration_time)
         token.save()
         con.lpush("%s:tokens" % self.redis_key, token.redis_key)
         return token
@@ -186,15 +187,35 @@ class Token(object):
     Class to manage Tokens
     """
 
-    def __init__(self, username=None, expiration_time=86400):
-        self.created_at = datetime.utcnow()
-        self.expires_at = self.created_at + timedelta(seconds=expiration_time)
-        self.hash = self.generate()
-        self.username = username
+    def __init__(self, hash=None, created_at=None, user=None, expiration_time=86400):
+        self.hash = hash if hash else self.generate()
+        self.created_at = created_at if created_at else datetime.utcnow()
+        self.user = user
+        self.expiration_time = expiration_time
 
     @property
     def redis_key(self):
         return "token:%s" % self.hash
+
+    @property
+    def expires_at(self):
+        return self.created_at + timedelta(seconds=self.expiration_time)
+
+    @classmethod
+    def from_dict(self, attributes):
+        # TODO: Fix this hardcode attributes
+        return Token(attributes['hash'],
+                     datetime.strptime(attributes['created_at'], '%Y-%m-%d %H:%M:%S.%f'),
+                     User.get(attributes['user']),
+                     int(attributes['expiration_time']))
+
+    @classmethod
+    def get(self, token):
+        attributes = con.hgetall("token:%s" % token)
+        if attributes:
+            return Token.from_dict(attributes)
+        else:
+            raise NappsEntryDoesNotExists("Token not found.")
 
     def is_valid(self):
         return datetime.utcnow() <= self.expires_at
@@ -203,17 +224,19 @@ class Token(object):
         return hashlib.sha256(os.urandom(128)).hexdigest()
 
     def invalidate(self):
-        self.expires_at = datetime.utcnow()
+        self.expiration_time = 0
         self.save()
 
     def as_dict(self):
-        return self.__dict__
+        dict = copy(self.__dict__)
+        dict['user'] = self.user.username
+        return dict
 
     def as_json(self):
         return json.dumps(self.as_dict())
 
-    def assign_to_user(self, username):
-        self.username = username
+    def assign_to_user(self, user):
+        self.user = user
 
     def save(self):
         """ Save a object into redis database.
@@ -221,4 +244,73 @@ class Token(object):
         This is a save/update method. If the token exists then update.
         """
         con.sadd("tokens", self.redis_key)
+        con.hmset(self.redis_key, self.as_dict())
+
+class Napp(object):
+    def __init__(self, repository=None):
+        if repository:
+            self.repository = repository
+            self.update_from_repository()
+
+    @property
+    def redis_key(self):
+        return "napp:%s/%s" % (self.user.username, self.name)
+
+    @classmethod
+    def all(self):
+        napps = con.smembers("napps")
+        result = []
+        # TODO: Improve this
+        for napp in napps:
+            attributes = con.hgetall(napp)
+            object = Napp()
+            object.name = attributes['name']
+            object.description = attributes['description']
+            object.license = attributes['license']
+            object.user = User.get(attributes['user'])
+            result.append(object)
+        return result
+
+    @classmethod
+    def from_dict(self, attributes):
+        # TODO: Fix this to avoid get date from git repository
+        # We already have this on redis
+        return Napp(attributes['repository'])
+
+
+    def update_from_repository(self):
+        if not self.repository:
+            return False
+
+        url = self.repository + "/raw/master/kytos.json"
+        buffer = urlopen(url)        
+        metadata = str(buffer.read(), encoding="utf-8")
+        attributes = json.loads(metadata)
+
+        try:
+            self.name = attributes['name']
+            self.description = attributes['description']
+            self.license = attributes['license']
+            self.user = User.get(attributes['author'])
+            #self.tags = attributes['tags']
+            self.save()
+        except NappsEntryDoesNotExists:
+            raise InvalidNappMetaData
+        except KeyError:
+            raise InvalidNappMetaData
+
+    def as_dict(self):
+        dict = copy(self.__dict__)
+        dict['user'] = self.user.username
+        return dict
+
+    def as_json(self):
+        return json.dumps(self.as_dict())
+
+    def save(self):
+        """ Save a object into redis database.
+
+        This is a save/update method. If the app exists then update.
+        """
+        con.sadd("napps", self.redis_key)
         con.hmset(self.redis_key, self.as_dict())

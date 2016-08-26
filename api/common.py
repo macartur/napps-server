@@ -10,12 +10,6 @@ napps_schema = {
     "token":  {"type": "string"},
     "required": ["git", "token"]}
 
-# JSON Schema for authentication
-napps_auth = {
-    "login": {"type": "string"},
-    "password": {"type": "string"},
-    "required": ["login", "password"]}
-
 # JSON Schema for Napps Description
 napp_git_schema = {
     "napp": {

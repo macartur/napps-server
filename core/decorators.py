@@ -4,7 +4,8 @@ from jsonschema import validate
 from jsonschema import ValidationError
 from functools import wraps
 
-from core.models import User
+from core.models import User, Token
+from core.exceptions import NappsEntryDoesNotExists
 
 def validate_json(f):
     @wraps(f)
@@ -17,7 +18,6 @@ def validate_json(f):
         return f(*args, **kw)
     return wrapper
 
-
 def validate_schema(schema):
     def decorator(f):
         @wraps(f)
@@ -25,7 +25,7 @@ def validate_schema(schema):
             try:
                 validate(request.json, schema)
             except ValidationError as e:
-                return jsonify({"error": e.message}), 400
+                return Response(e.message, 400)
             return f(*args, **kw)
         return wrapper
     return decorator
@@ -39,9 +39,28 @@ def authenticate():
 
 def requires_auth(f):
     @wraps(f)
-    def decorated(*args, **kwargs):
+    def wrapper(*args, **kwargs):
         auth = request.authorization
         if not auth or not User.check_auth(auth.username, auth.password):
             return authenticate()
         return f(*args, **kwargs)
-    return decorated
+    return wrapper
+
+def requires_token(f):
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        content = request.get_json()
+        try:
+            token = Token.get(content['token'])
+        except NappsEntryDoesNotExists:
+            return Response("Permission denied", 401)
+        except KeyError:
+            return Response("Invalid request", 400)
+
+        if not token.is_valid():
+            return Response("Permission denied", 401)
+
+        # Otherwise just send them where they wanted to go
+        return f(token.user, *args, **kwargs)
+
+    return wrapper

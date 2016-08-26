@@ -3,3 +3,6 @@ class NappsDuplicateEntry(Exception):
 
 class NappsEntryDoesNotExists(Exception):
     pass
+
+class InvalidNappMetaData(Exception):
+    pass
