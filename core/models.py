@@ -264,7 +264,7 @@ class Napp(object):
         for napp in napps:
             attributes = con.hgetall(napp)
             object = Napp()
-            object.name = attributes['name']
+            object.name = "%s/%s" % (attributes['user'], attributes['name'])
             object.description = attributes['description']
             object.license = attributes['license']
             object.user = User.get(attributes['user'])

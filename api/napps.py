@@ -14,6 +14,15 @@ from core.exceptions import NappsEntryDoesNotExists
 # Flask Blueprints
 api = Blueprint('napp_api', __name__)
 
+@api.route('/napps/', methods=['GET'])
+def get_napps():
+    """
+    This routine creates an endpoint that shows all network applications.
+    It returns all information in JSON format.
+    """
+    napps = {napp.name: napp.as_dict() for napp in Napp.all()}
+    return jsonify({'napps': napps }), 200
+
 @api.route("/api/napps/", methods=["POST"])
 @requires_token
 @validate_json
