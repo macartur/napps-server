@@ -10,9 +10,20 @@ from flask import Response
 from core.models import Token, Napp
 from core.decorators import (validate_json, requires_token)
 from core.exceptions import NappsEntryDoesNotExists
+from core.exceptions import InvalidAuthor
+from core.exceptions import InvalidNappMetaData
 
 # Flask Blueprints
 api = Blueprint('napp_api', __name__)
+
+@api.route('/napps/', methods=['GET'])
+def get_napps():
+    """
+    This routine creates an endpoint that shows all network applications.
+    It returns all information in JSON format.
+    """
+    napps = {napp.name: napp.as_dict() for napp in Napp.all()}
+    return jsonify({'napps': napps }), 200
 
 @api.route("/napps/", methods=["POST"])
 @requires_token
@@ -32,7 +43,13 @@ def register_napp(user):
     if not user.enabled:
         return Response("Permission denied", 401)
 
-    napp = Napp(repository)
+    try:
+      napp = Napp(repository, user)
+    except InvalidAuthor:
+        return Response("Permission denied. Invalid Author.", 401)
+    except InvalidNappMetaData:
+        return Response("Permission denied. Invalid metadata.", 401)
+
     return Response("Napp created succesfully", 201)
 
 #@api.route('/api/users/', methods=['GET'])

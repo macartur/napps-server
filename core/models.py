@@ -18,6 +18,7 @@ from jinja2 import Template
 
 # Local source tree imports
 from core.exceptions import NappsEntryDoesNotExists
+from core.exceptions import InvalidAuthor
 from core.exceptions import InvalidNappMetaData
 
 con = config.CON
@@ -247,9 +248,10 @@ class Token(object):
         con.hmset(self.redis_key, self.as_dict())
 
 class Napp(object):
-    def __init__(self, repository=None):
+    def __init__(self, repository=None, author=None):
         if repository:
             self.repository = repository
+            self.user = author
             self.update_from_repository()
 
     @property
@@ -286,18 +288,19 @@ class Napp(object):
         buffer = urlopen(url)        
         metadata = str(buffer.read(), encoding="utf-8")
         attributes = json.loads(metadata)
-
         try:
-            self.name = attributes['name']
+            self.name = "%s/%s" % (attributes['author'], attributes['name'])
             self.description = attributes['description']
             self.license = attributes['license']
-            self.user = User.get(attributes['author'])
             #self.tags = attributes['tags']
             self.save()
         except NappsEntryDoesNotExists:
             raise InvalidNappMetaData
         except KeyError:
             raise InvalidNappMetaData
+
+        if attributes['author'] != self.user.username:
+          raise InvalidAuthor
 
     def as_dict(self):
         dict = copy(self.__dict__)

@@ -6,3 +6,6 @@ class NappsEntryDoesNotExists(Exception):
 
 class InvalidNappMetaData(Exception):
     pass
+
+class InvalidAuthor(Exception):
+    pass
