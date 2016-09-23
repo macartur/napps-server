@@ -13,7 +13,7 @@ from core.models import User
 # Flask Blueprints
 api = Blueprint('auth_api', __name__)
 
-@api.route("/api/auth/", methods=["POST"])
+@api.route("/auth/", methods=["POST"])
 @requires_auth
 def napps_auth():
     """

@@ -25,7 +25,7 @@ def get_napps():
     napps = {napp.name: napp.as_dict() for napp in Napp.all()}
     return jsonify({'napps': napps }), 200
 
-@api.route("/api/napps/", methods=["POST"])
+@api.route("/napps/", methods=["POST"])
 @requires_token
 @validate_json
 def register_napp(user):

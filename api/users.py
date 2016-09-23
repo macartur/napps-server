@@ -14,7 +14,7 @@ from core.exceptions import NappsEntryDoesNotExists
 # Flask Blueprints
 api = Blueprint('user_api', __name__)
 
-@api.route("/api/users/", methods=["POST"])
+@api.route("/users/", methods=["POST"])
 @validate_json
 @validate_schema(User.schema)
 def register_user():
@@ -39,7 +39,7 @@ def register_user():
         user.send_token()
         return '', 201
 
-@api.route('/api/users/', methods=['GET'])
+@api.route('/users/', methods=['GET'])
 def get_users():
     """
     This routine creates an endpoint that shows all applications developers
@@ -50,7 +50,7 @@ def get_users():
     users = {user.username: user.as_dict() for user in User.all()}
     return jsonify({'users': users }), 200
 
-@api.route('/api/users/<username>/', methods=['GET'])
+@api.route('/users/<username>/', methods=['GET'])
 def get_user(username):
     """
     This routine creates an endpoint that shows details about a specific
@@ -63,7 +63,7 @@ def get_user(username):
 
     return jsonify(user.as_dict()), 200
 
-@api.route("/api/users/<username>/confirm/<token>/", methods=["GET"])
+@api.route("/users/<username>/confirm/<token>/", methods=["GET"])
 def confirm_user(username, token):
     # Check if user exists
     try:
