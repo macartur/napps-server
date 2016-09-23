@@ -11,7 +11,7 @@ from core.decorators import (validate_json, validate_schema)
 # Flask Blueprints
 api = Blueprint('user_api', __name__)
 
-@api.route("/api/users/", methods=["POST"])
+@api.route("/users/", methods=["POST"])
 @validate_json
 @validate_schema(User.schema)
 def register_user():

@@ -63,7 +63,7 @@ def get_author_comments(name):
         return None
 
 
-@api.route('/api/napps/<name>/comments', methods=['GET'])
+@api.route('/napps/<name>/comments', methods=['GET'])
 def get_napps_comments(name):
     """
     This endpoints returns a JSON with all comments of a given author.
