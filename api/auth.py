@@ -21,7 +21,8 @@ def napps_auth():
     :return: A token to the user
     """
     try:
-        user = User.get(request.authorization.username)
+        auth = request.authorization
+        user = User.get(auth.username)
     except NappsEntryDoesNotExists:
         return jsonify({'error': 'User not found'}), 404
 

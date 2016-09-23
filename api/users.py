@@ -3,10 +3,13 @@
 # Third-party imports
 from flask import Blueprint
 from flask import jsonify
+from flask import request
 
 # Local source tree imports
 from core.models import User
 from core.decorators import (validate_json, validate_schema)
+
+from core.exceptions import NappsEntryDoesNotExists
 
 # Flask Blueprints
 api = Blueprint('user_api', __name__)
