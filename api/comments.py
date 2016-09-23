@@ -41,7 +41,7 @@ def get_author(author_key):
     return author_dict
 
 
-@api.route('/api/authors/<name>/comments', methods=['GET'])
+@api.route('/authors/<name>/comments', methods=['GET'])
 def get_author_comments(name):
     """
     This endpoints returns an JSON with all comments of a given application

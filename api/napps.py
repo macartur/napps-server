@@ -14,7 +14,7 @@ from core.exceptions import NappsEntryDoesNotExists
 # Flask Blueprints
 api = Blueprint('napp_api', __name__)
 
-@api.route("/api/napps/", methods=["POST"])
+@api.route("/napps/", methods=["POST"])
 @requires_token
 @validate_json
 def register_napp(user):
