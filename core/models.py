@@ -124,7 +124,7 @@ class User(object):
             del result['password']
 
         if detailed:
-            result['apps'] = "%s:apps" % self.redis_key
+            result['napps'] = "%s:napps" % self.redis_key
             result['comments'] = "%s:comments" % self.redis_key
             result['tokens'] = "%s:tokens" % self.redis_key
 
@@ -176,6 +176,30 @@ class User(object):
         context = {'username': self.username}
         html = self.render_template('welcome.phtml', context)
         self.send_email(html, 'Welcome to Kytos Napps Respository')
+
+    def get_all_napps(self):
+        napps = con.smembers("%s:napps" % self.redis_key)
+        result = []
+        # TODO: Improve this
+        for napp in napps:
+            attributes = con.hgetall(napp)
+            object = Napp()
+            object.name = attributes['name']
+            object.description = attributes['description']
+            object.license = attributes['license']
+            object.git = attributes['git']
+            object.version = attributes['version']
+            object.user = User.get(attributes['user'])
+            object.tags = attributes['tags']
+            result.append(object)
+        return result
+
+    def get_napp_by_name(self, name):
+      napps = self.get_all_napps()
+      for napp in napps:
+        if napp.name == name:
+          return napp
+      return None
 
     # TODO: Remove this from this class
     def render_template(self, filename, context):
@@ -269,7 +293,10 @@ class Napp(object):
             object.name = attributes['name']
             object.description = attributes['description']
             object.license = attributes['license']
+            object.git = attributes['git']
+            object.version = attributes['version']
             object.user = User.get(attributes['user'])
+            object.tags = attributes['tags']
             result.append(object)
         return result
 
@@ -279,7 +306,6 @@ class Napp(object):
         # We already have this on redis
         return Napp(attributes['repository'])
 
-
     def update_from_repository(self):
         if not self.repository:
             return False
@@ -288,11 +314,14 @@ class Napp(object):
         buffer = urlopen(url)        
         metadata = str(buffer.read(), encoding="utf-8")
         attributes = json.loads(metadata)
+        print(attributes)
         try:
-            self.name = "%s/%s" % (attributes['author'], attributes['name'])
+            self.name = attributes['name']
             self.description = attributes['description']
             self.license = attributes['license']
-            #self.tags = attributes['tags']
+            self.git = attributes['git']
+            self.version = attributes['version']
+            self.tags = ",".join(attributes['tags'])
             self.save()
         except NappsEntryDoesNotExists:
             raise InvalidNappMetaData
@@ -308,7 +337,9 @@ class Napp(object):
         return dict
 
     def as_json(self):
-        return json.dumps(self.as_dict())
+        dict = self.as_dict()
+        dict['tags'] = self.tags.split(',')
+        return json.dumps(dict)
 
     def save(self):
         """ Save a object into redis database.
@@ -316,4 +347,5 @@ class Napp(object):
         This is a save/update method. If the app exists then update.
         """
         con.sadd("napps", self.redis_key)
+        con.sadd("user:%s:napps" % self.user.username, self.redis_key)
         con.hmset(self.redis_key, self.as_dict())
