@@ -56,7 +56,7 @@ def register_napp(user):
     """
     content = request.get_json()
     try:
-        repository = content['repository']
+        git = content['git']
     except KeyError:
         return Response("Invalid request", 400)
 
@@ -64,7 +64,7 @@ def register_napp(user):
         return Response("Permission denied", 401)
 
     try:
-      napp = Napp(repository, user)
+      napp = Napp(git, user)
     except InvalidAuthor:
         return Response("Permission denied. Invalid Author.", 401)
     except InvalidNappMetaData:

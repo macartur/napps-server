@@ -272,11 +272,11 @@ class Token(object):
         con.hmset(self.redis_key, self.as_dict())
 
 class Napp(object):
-    def __init__(self, repository=None, author=None):
-        if repository:
-            self.repository = repository
+    def __init__(self, git=None, author=None):
+        if git:
+            self.git = git
             self.user = author
-            self.update_from_repository()
+            self.update_from_git()
 
     @property
     def redis_key(self):
@@ -304,14 +304,14 @@ class Napp(object):
     def from_dict(self, attributes):
         # TODO: Fix this to avoid get date from git repository
         # We already have this on redis
-        return Napp(attributes['repository'])
+        return Napp(attributes['git'])
 
-    def update_from_repository(self):
-        if not self.repository:
+    def update_from_git(self):
+        if not self.git:
             return False
 
-        url = self.repository + "/raw/master/kytos.json"
-        buffer = urlopen(url)        
+        url = self.git + "/raw/master/kytos.json"
+        buffer = urlopen(url)
         metadata = str(buffer.read(), encoding="utf-8")
         attributes = json.loads(metadata)
         print(attributes)
