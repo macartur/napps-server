@@ -55,16 +55,14 @@ def register_napp(user):
     case of failure.
     """
     content = request.get_json()
-    try:
-        git = content['git']
-    except KeyError:
+    if 'git' not in content:
         return Response("Invalid request", 400)
 
     if not user.enabled:
         return Response("Permission denied", 401)
 
     try:
-      napp = Napp(git, user)
+      napp = Napp(content, user)
     except InvalidAuthor:
         return Response("Permission denied. Invalid Author.", 401)
     except InvalidNappMetaData:
