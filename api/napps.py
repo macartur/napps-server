@@ -16,6 +16,7 @@ from core.exceptions import InvalidNappMetaData
 # Flask Blueprints
 api = Blueprint('napp_api', __name__)
 
+
 @api.route('/napps/', methods=['GET'])
 def get_napps():
     """
@@ -24,6 +25,7 @@ def get_napps():
     """
     napps = [napp.as_dict() for napp in Napp.all()]
     return jsonify({'napps': napps }), 200
+
 
 @api.route('/napps/<author>/<name>/', methods=['GET'])
 def get_napp(author, name):
@@ -41,6 +43,7 @@ def get_napp(author, name):
         return jsonify({'error': 'Napp not found'}), 404
 
     return jsonify(napp.as_dict()), 200
+
 
 @api.route("/napps/", methods=["POST"])
 @requires_token
@@ -68,27 +71,3 @@ def register_napp(user):
         return Response("Permission denied. Invalid metadata.", 401)
 
     return Response("Napp created succesfully", 201)
-
-#@api.route('/api/users/', methods=['GET'])
-#def get_users():
-#    """
-#    This routine creates an endpoint that shows all applications developers
-#    (application authors) with their information. It returns all information
-#    in JSON format.
-#    """
-#
-#    users = {user.username: user.as_dict() for user in User.all()}
-#    return jsonify({'users': users }), 200
-#
-#@api.route('/api/users/<username>/', methods=['GET'])
-#def get_user(username):
-#    """
-#    This routine creates an endpoint that shows details about a specific
-#    application author. It returns all information in JSON format.
-#    """
-#    try:
-#        user = User.get(username)
-#    except NappsEntryDoesNotExists:
-#        return jsonify({'error': 'User not found'}), 404
-#
-#    return jsonify(user.as_dict()), 200
