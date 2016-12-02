@@ -3,6 +3,7 @@ from copy import copy
 from datetime import datetime
 from datetime import timedelta
 
+import brcrypt
 import config
 import hashlib
 import json
@@ -47,7 +48,7 @@ class User(object):
                  phone=None, city=None, state=None, country=None, enabled=False):
 
         self.username = username
-        self.password = password # TODO: Crypt this
+        self.password = bcrypt.hashpw(password, bcrypt.gensalt()) # TODO: Crypt this
         self.email = email
         self.first_name = first_name
         self.last_name = last_name
@@ -89,13 +90,13 @@ class User(object):
         return [User.from_dict(con.hgetall(user)) for user in users]
 
     @classmethod
-    def check_auth(uself, username, password):
+    def check_auth(username, password):
         try:
             user = User.get(username)
         except NappsEntryDoesNotExists:
             return False
 
-        if user.password != password:
+        if bcrypt.checkpw(password, user.password):
             return False
         return True
 
