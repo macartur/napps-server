@@ -1,5 +1,5 @@
 # System imports
-from copy import copy
+from copy import deepcopy
 from datetime import datetime
 from datetime import timedelta
 from docutils import core
@@ -312,7 +312,7 @@ class Napp(object):
         if user is not None:
             if not isinstance(user, User):
                 user = User.get(user)
-            self.user = user
+        self.user = user
         if content is not None:
             self._populate_from_dict(content)
 
@@ -328,7 +328,7 @@ class Napp(object):
         return url
 
     @property
-    def json_from_git(self):
+    def _json_from_git(self):
         url = self._url_for_raw_file_from_git + 'kytos.json'
         buffer = urlopen(url)
         metadata = str(buffer.read(), encoding="utf-8")
@@ -347,12 +347,11 @@ class Napp(object):
 
     @property
     def readme_html_from_git(self):
-        readme = self.readme_rst_from_git
-        if readme:
+        try:
             parts = core.publish_parts(source=self.readme_rst_from_git,
                                        writer_name='html')
             return parts['body_pre_docinfo'] + parts['fragment']
-        else:
+        except:
             return ''
 
     @classmethod
@@ -392,17 +391,16 @@ class Napp(object):
             self.save()
 
     def update_from_git(self):
-        self.update_from_dict(self.json_from_git)
+        self.update_from_dict(self._json_from_git)
 
     def as_dict(self):
-        data = copy(self.__dict__)
-        data['user'] = self.user.username
+        data = deepcopy(self.__dict__)
+        data['user'] = self.author
         data['readme'] = self.readme_html_from_git
         return data
 
     def as_json(self):
         data = self.as_dict()
-        data['tags'] = self.tags.split(',')
         return json.dumps(data)
 
     def save(self):
