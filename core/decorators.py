@@ -10,11 +10,8 @@ from core.exceptions import NappsEntryDoesNotExists
 def validate_json(f):
     @wraps(f)
     def wrapper(*args, **kw):
-#        try:
-        request.json
-#        except BadRequest as e:
-#            msg = "Payload must be a valid json"
-#            return jsonify({"error": msg}), 400
+        if request.get_json() is None:
+            return jsonify({'error': "Payload must be a valid json"}), 400
         return f(*args, **kw)
     return wrapper
 

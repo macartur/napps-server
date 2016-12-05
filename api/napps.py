@@ -36,11 +36,15 @@ def get_napp(author, name):
     try:
         user = User.get(author)
     except NappsEntryDoesNotExists:
-        return jsonify({'error': 'Napp not found'}), 404
+        return jsonify({
+            'error': 'Author {} not found'.format(author)
+        }), 404
 
     napp = user.get_napp_by_name(name)
     if napp is None:
-        return jsonify({'error': 'Napp not found'}), 404
+        return jsonify({
+            'error': 'Napp {} not found for the user {}'.format(name, author)
+        }), 404
 
     return jsonify(napp.as_dict()), 200
 
@@ -55,14 +59,11 @@ def register_napp(user):
     case of failure.
     """
     content = request.get_json()
-    if 'git' not in content:
-        return Response("Invalid request", 400)
-
-    if not user.enabled:
+    if not user.enabled or not content['author'] == user.username :
         return Response("Permission denied", 401)
 
     try:
-      napp = Napp(content, user)
+        napp = Napp.new_napp_from_dict(content, user)
     except InvalidAuthor:
         return Response("Permission denied. Invalid Author.", 401)
     except InvalidNappMetaData:

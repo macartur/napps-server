@@ -6,5 +6,6 @@ Flask-RESTful
 urllib5
 requests
 jsonschema
+docutils
 pytz
 redis

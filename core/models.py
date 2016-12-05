@@ -2,12 +2,14 @@
 from copy import copy
 from datetime import datetime
 from datetime import timedelta
+from docutils import core
 
-import brcrypt
+import bcrypt
 import config
 import hashlib
 import json
 import os
+import re
 import smtplib
 from urllib.request import urlopen
 
@@ -60,7 +62,7 @@ class User(object):
 
     @property
     def redis_key(self):
-        return "user:%s" % self.username
+        return "user:{}".format(self.username)
 
     @property
     def token(self):
@@ -77,20 +79,20 @@ class User(object):
             return None
 
     @classmethod
-    def get(self, username):
+    def get(cls, username):
         attributes = con.hgetall("user:%s" % username)
         if attributes:
             return User.from_dict(attributes)
         else:
-            raise NappsEntryDoesNotExists("Username not found.")
+            raise NappsEntryDoesNotExists("User {} not found.".format(username))
 
     @classmethod
-    def all(self):
+    def all(cls):
         users = con.smembers("users")
         return [User.from_dict(con.hgetall(user)) for user in users]
 
     @classmethod
-    def check_auth(username, password):
+    def check_auth(cls, username, password):
         try:
             user = User.get(username)
         except NappsEntryDoesNotExists:
@@ -101,7 +103,7 @@ class User(object):
         return True
 
     @classmethod
-    def from_dict(self, attributes):
+    def from_dict(cls, attributes):
         # TODO: Fix this hardcode attributes
         return User(attributes['username'], attributes['password'],
                     attributes['email'], attributes['first_name'],
@@ -222,14 +224,14 @@ class Token(object):
 
     @property
     def redis_key(self):
-        return "token:%s" % self.hash
+        return "token:{}".format(self.hash)
 
     @property
     def expires_at(self):
         return self.created_at + timedelta(seconds=self.expiration_time)
 
     @classmethod
-    def from_dict(self, attributes):
+    def from_dict(cls, attributes):
         # TODO: Fix this hardcode attributes
         return Token(attributes['hash'],
                      datetime.strptime(attributes['created_at'], '%Y-%m-%d %H:%M:%S.%f'),
@@ -237,7 +239,7 @@ class Token(object):
                      int(attributes['expiration_time']))
 
     @classmethod
-    def get(self, token):
+    def get(cls, token):
         attributes = con.hgetall("token:%s" % token)
         if attributes:
             return Token.from_dict(attributes)
@@ -275,72 +277,128 @@ class Token(object):
 
 
 class Napp(object):
-    def __init__(self, content=None, author=None):
-        if content is not None and author is not None:
-            self.user = author
-            self.update_from_dict(content)
+
+    schema = {
+        "name": {"type": "string"},
+        "description": {"type": "string"},
+        "long_description": {"type": "string"},
+        "version": {"type": "string"},
+        "author": {"type": "string"},
+        "license": {"type": "string"},
+        "git": {"type": "string"},
+        "branch": {"type": "string"},
+        "ofversion": {"type": "array",
+                      "items": { "type": "string" },
+                      "minItems": 1,
+                      "uniqueItems": True },
+        "tags": {"type": "array",
+                 "items": { "type": "string" },
+                 "minItems": 1,
+                 "uniqueItems": True },
+        "dependencies": {"type": "array",
+                         "items": { "type": "string" },
+                         "minItems": 0,
+                         "uniqueItems": True },
+        "required": ["name", "description", "version", "author","license",
+                     "git", "branch", "ofversion", "tags", "dependencies"]
+    }
+
+    def __init__(self, content, user=None):
+        if user is not None:
+            if not isinstance(user, User):
+                user = User.get(user)
+            self.user = user
+        if content is not None:
+            self._populate_from_dict(content)
 
     @property
     def redis_key(self):
-        return "napp:%s/%s" % (self.user.username, self.name)
+        return "napp:{}/{}".formata(self.author, self.name)
+
+    @property
+    def _url_for_raw_file_from_git(self):
+        url = re.sub('\.git\/?$', '/', self.git)
+        url += "raw/" + self.branch + "/" + self.author + "/"
+        url += self.name + "/"
+        return url
+
+    @property
+    def json_from_git(self):
+        url = self._url_for_raw_file_from_git + 'kytos.json'
+        buffer = urlopen(url)
+        metadata = str(buffer.read(), encoding="utf-8")
+        attributes = json.loads(metadata)
+        return attributes
+
+    @property
+    def readme_rst_from_git(self):
+        url = self._url_for_raw_file_from_git + 'README.rst'
+        try:
+            buffer = urlopen(url)
+            readme = str(buffer.read(), encoding="utf-8")
+            return readme
+        except:
+            return ''
+
+    @property
+    def readme_html_from_git(self):
+        readme = self.readme_rst_from_git
+        if readme:
+            parts = core.publish_parts(source=self.readme_rst_from_git,
+                                       writer_name='html')
+            return parts['body_pre_docinfo'] + parts['fragment']
+        else:
+            return ''
 
     @classmethod
-    def all(self):
+    def all(cls):
         napps = con.smembers("napps")
         result = []
         # TODO: Improve this
         for napp in napps:
             attributes = con.hgetall(napp)
-            napp_object = Napp()
-            napp_object.name = attributes['name']
-            napp_object.description = attributes['description']
-            napp_object.license = attributes['license']
-            napp_object.git = attributes['git']
-            napp_object.version = attributes['version']
-            napp_object.user = User.get(attributes['user'])
-            napp_object.tags = attributes['tags']
+            napp_object = Napp(attributes)
             result.append(napp_object)
         return result
 
+    def _populate_from_dict(self, attributes):
+        for key in self.schema.keys():
+            if key != 'required':
+                # This is a validation for required items...
+                # But it can be improved
+                if key in self.schema['required'] and key not in attributes:
+                    raise InvalidNappMetaData('Missing key {}'.format(key))
+                setattr(self, key, attributes.get(key))
+
     @classmethod
+    def new_napp_from_dict(cls, attributes, user):
+        napp = cls(attributes, user)
+        if napp.user.username != napp.author:
+            raise InvalidAuthor
+        else:
+            napp.save()
+            return napp
+
     def update_from_dict(self, attributes):
-        try:
-            self.name = attributes['name']
-            self.description = attributes['description']
-            self.license = attributes['license']
-            self.git = attributes['git']
-            self.version = attributes['version']
-            self.tags = ",".join(attributes['tags'])
+        if self.user.username != attributes.author:
+            raise InvalidAuthor
+        else:
+            self._populate_from_dict(attributes)
             self.save()
-        except NappsEntryDoesNotExists:
-            raise InvalidNappMetaData
-        except KeyError:
-            raise InvalidNappMetaData
-
-        if attributes['author'] != self.user.username:
-          raise InvalidAuthor
-
-        self.save()
 
     def update_from_git(self):
-        if not self.git:
-            return False
-
-        url = self.git + "/raw/master/kytos.json"
-        buffer = urlopen(url)
-        metadata = str(buffer.read(), encoding="utf-8")
-        attributes = json.loads(metadata)
-        self.update_from_dict(attributes)
+        self.update_from_dict(self.json_from_git)
 
     def as_dict(self):
-        dict = copy(self.__dict__)
-        dict['user'] = self.user.username
-        return dict
+        data = copy(self.__dict__)
+        data['user'] = self.user.username
+        data['readme'] = self.readme_html_from_git
+        return data
 
     def as_json(self):
-        dict = self.as_dict()
-        dict['tags'] = self.tags.split(',')
-        return json.dumps(dict)
+        data = self.as_dict()
+        data['tags'] = self.tags.split(',')
+        return json.dumps(data)
 
     def save(self):
         """ Save a object into redis database.
@@ -348,5 +406,5 @@ class Napp(object):
         This is a save/update method. If the app exists then update.
         """
         con.sadd("napps", self.redis_key)
-        con.sadd("user:%s:napps" % self.user.username, self.redis_key)
+        con.sadd("user:%s:napps" % self.author, self.redis_key)
         con.hmset(self.redis_key, self.as_dict())
