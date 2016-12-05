@@ -30,9 +30,7 @@ APP_ROOT = os.path.dirname(os.path.abspath(__file__))
 TEMPLATE_DIR = os.path.join(APP_ROOT, 'templates')
 
 class User(object):
-    """
-    Class to manage Users
-    """
+    """Class to manage Users"""
     schema = {
         "username": {"type": "string"},
         "first_name": {"type": "string"},
@@ -46,11 +44,9 @@ class User(object):
         "required": ["username", "first_name", "last_name", "password", "email"]
     }
 
-    def __init__(self, username, password, email, first_name, last_name,
+    def __init__(self, username, email, first_name, last_name,
                  phone=None, city=None, state=None, country=None, enabled=False):
-
         self.username = username
-        self.password = bcrypt.hashpw(password, bcrypt.gensalt()) # TODO: Crypt this
         self.email = email
         self.first_name = first_name
         self.last_name = last_name
@@ -82,14 +78,16 @@ class User(object):
     def get(cls, username):
         attributes = con.hgetall("user:%s" % username)
         if attributes:
-            return User.from_dict(attributes)
+            user = User.from_dict(attributes)
+            user.password = attributes['password'].encode('utf-8')
+            return user
         else:
             raise NappsEntryDoesNotExists("User {} not found.".format(username))
 
     @classmethod
     def all(cls):
         users = con.smembers("users")
-        return [User.from_dict(con.hgetall(user)) for user in users]
+        return [User.get(re.sub(r'^user:', '', user)) for user in users]
 
     @classmethod
     def check_auth(cls, username, password):
@@ -98,18 +96,23 @@ class User(object):
         except NappsEntryDoesNotExists:
             return False
 
-        if bcrypt.checkpw(password, user.password):
+        if not bcrypt.checkpw(password.encode('utf-8'), user.password):
             return False
         return True
 
     @classmethod
     def from_dict(cls, attributes):
         # TODO: Fix this hardcode attributes
-        return User(attributes['username'], attributes['password'],
-                    attributes['email'], attributes['first_name'],
-                    attributes['last_name'], attributes['phone'],
-                    attributes['city'], attributes['state'],
-                    attributes['country'], eval(attributes['enabled']))
+        user = User(attributes['username'], attributes['email'],
+                    attributes['first_name'], attributes['last_name'],
+                    attributes['phone'], attributes['city'],
+                    attributes['state'], attributes['country'],
+                    eval(attributes['enabled']))
+        return user
+
+    def set_password(self, password):
+        self.password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+        self.save()
 
     def disable(self):
         self.enabled = False
@@ -141,6 +144,8 @@ class User(object):
 
         This is a save/update method. If the user already exists then update.
         """
+        if not self.password:
+            raise InvalidAuthor('Impossible to save a user without password.')
         con.sadd("users", self.redis_key)
         con.hmset(self.redis_key, self.as_dict(hide_sensible=False,
                                                detailed=True))
