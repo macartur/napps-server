@@ -186,28 +186,20 @@ class User(object):
         self.send_email(html, 'Welcome to Kytos Napps Respository')
 
     def get_all_napps(self):
-        napps = con.smembers("%s:napps" % self.redis_key)
+        napps = con.smembers("{}:napps".format(self.redis_key))
         result = []
         # TODO: Improve this
         for napp in napps:
-            attributes = con.hgetall(napp)
-            napp_object = Napp()
-            napp_object.name = attributes['name']
-            napp_object.description = attributes['description']
-            napp_object.license = attributes['license']
-            napp_object.git = attributes['git']
-            napp_object.version = attributes['version']
-            napp_object.user = User.get(attributes['user'])
-            napp_object.tags = attributes['tags']
+            napp_object = Napp(con.hgetall(napp), self.username)
             result.append(napp_object)
         return result
 
     def get_napp_by_name(self, name):
-      napps = self.get_all_napps()
-      for napp in napps:
-        if napp.name == name:
-          return napp
-      return None
+        try:
+            napp = Napp(con.hgetall("napp:{}/{}".format(self.username, name)))
+            return napp
+        except:
+            raise NappsEntryDoesNotExists("Napp {} not found for user {}.".format(name, self.username))
 
     # TODO: Remove this from this class
     def render_template(self, filename, context):
@@ -318,7 +310,7 @@ class Napp(object):
 
     @property
     def redis_key(self):
-        return "napp:{}/{}".formata(self.author, self.name)
+        return "napp:{}/{}".format(self.author, self.name)
 
     @property
     def _url_for_raw_file_from_git(self):
