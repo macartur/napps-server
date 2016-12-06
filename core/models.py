@@ -1,7 +1,6 @@
 # System imports
 from copy import deepcopy
-from datetime import datetime
-from datetime import timedelta
+from datetime import datetime, timedelta
 from docutils import core
 
 import bcrypt
@@ -20,9 +19,8 @@ from email.mime.text import MIMEText
 from jinja2 import Template
 
 # Local source tree imports
-from core.exceptions import NappsEntryDoesNotExists
-from core.exceptions import InvalidAuthor
-from core.exceptions import InvalidNappMetaData
+from core.exceptions import (InvalidAuthor, InvalidNappMetaData,
+                             NappsEntryDoesNotExists, RepositoryNotReachable)
 
 con = config.CON
 
@@ -125,7 +123,7 @@ class User(object):
         self.save()
 
     def as_dict(self, hide_sensible=True, detailed=False):
-        result = copy(self.__dict__)
+        result = deepcopy(self.__dict__)
         if hide_sensible:
             del result['password']
 
@@ -254,9 +252,9 @@ class Token(object):
         self.save()
 
     def as_dict(self):
-        dict = copy(self.__dict__)
-        dict['user'] = self.user.username
-        return dict
+        token = deepcopy(self.__dict__)
+        token['user'] = self.user.username
+        return token
 
     def as_json(self):
         return json.dumps(self.as_dict())
@@ -284,6 +282,7 @@ class Napp(object):
         "license": {"type": "string"},
         "git": {"type": "string"},
         "branch": {"type": "string"},
+        "readme": {"type": "string"},  # To be read from README.rst
         "ofversion": {"type": "array",
                       "items": { "type": "string" },
                       "minItems": 1,
@@ -296,6 +295,7 @@ class Napp(object):
                          "items": { "type": "string" },
                          "minItems": 0,
                          "uniqueItems": True },
+        "user": {"type": "string"},  # Not to be read from json.
         "required": ["name", "description", "version", "author","license",
                      "git", "branch", "ofversion", "tags", "dependencies"]
     }
@@ -322,29 +322,35 @@ class Napp(object):
     @property
     def _json_from_git(self):
         url = self._url_for_raw_file_from_git + 'kytos.json'
-        buffer = urlopen(url)
-        metadata = str(buffer.read(), encoding="utf-8")
-        attributes = json.loads(metadata)
-        return attributes
-
-    @property
-    def readme_rst_from_git(self):
-        url = self._url_for_raw_file_from_git + 'README.rst'
         try:
             buffer = urlopen(url)
-            readme = str(buffer.read(), encoding="utf-8")
-            return readme
+            metadata = str(buffer.read(), encoding="utf-8")
+            attributes = json.loads(metadata)
+            return attributes
         except:
+            msg = 'The repository {} could not be reached'
+            raise RepositoryNotReachable(msg, url)
+
+    @property
+    def readme_rst(self):
+        if self.readme:
+            return self.readme
+        else:
             return self.long_description
 
     @property
-    def readme_html_from_git(self):
+    def readme_html(self):
+        parts = core.publish_parts(source=self.readme_rst, writer_name='html')
+        return parts['body_pre_docinfo'] + parts['fragment']
+
+    def update_readme_from_git(self):
+        url = self._url_for_raw_file_from_git + 'README.rst'
         try:
-            parts = core.publish_parts(source=self.readme_rst_from_git,
-                                       writer_name='html')
-            return parts['body_pre_docinfo'] + parts['fragment']
+            buffer = urlopen(url)
+            self.readme = str(buffer.read(), encoding="utf-8")
         except:
-            return ''
+            msg = "Repository {} could not be reached."
+            raise RepositoryNotReachable(msg, url)
 
     @classmethod
     def all(cls):
@@ -359,12 +365,24 @@ class Napp(object):
 
     def _populate_from_dict(self, attributes):
         for key in self.schema.keys():
-            if key != 'required':
+            if key != 'required' and key !='user':
                 # This is a validation for required items...
                 # But it can be improved
                 if key in self.schema['required'] and key not in attributes:
                     raise InvalidNappMetaData('Missing key {}'.format(key))
+
+                # Converting to list, if needed.
+                if self.schema[key]['type'] == 'array' and \
+                   not isinstance(attributes.get(key), list):
+                    attributes[key] = eval(attributes.get(key, []))
+
                 setattr(self, key, attributes.get(key))
+
+        if not self.readme:
+            try:
+                self.update_readme_from_git()
+            except:
+                pass
 
     @classmethod
     def new_napp_from_dict(cls, attributes, user):
@@ -386,9 +404,15 @@ class Napp(object):
         self.update_from_dict(self._json_from_git)
 
     def as_dict(self):
-        data = deepcopy(self.__dict__)
+        data = {}
+        for key in self.schema:
+            if key != 'required':
+                if self.schema[key]['type'] is 'array':
+                    data[key] = getattr(self, key, [])
+                else:
+                    data[key] = getattr(self, key, '')
         data['user'] = self.author
-        data['readme'] = self.readme_html_from_git
+        data['readme'] = self.readme_html
         return data
 
     def as_json(self):
