@@ -335,7 +335,7 @@ class Napp(object):
             readme = str(buffer.read(), encoding="utf-8")
             return readme
         except:
-            return ''
+            return self.long_description
 
     @property
     def readme_html_from_git(self):
