@@ -24,6 +24,10 @@ def get_napps():
     It returns all information in JSON format.
     """
     napps = [napp.as_dict() for napp in Napp.all()]
+    params = request.args
+    length = params.get('length')
+    if length and int(length) > 0:
+        napps = napps[0:int(length)]
     return jsonify({'napps': napps }), 200
 
 
