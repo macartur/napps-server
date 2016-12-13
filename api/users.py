@@ -30,10 +30,10 @@ def register_user():
     except NappsEntryDoesNotExists:
         # TODO: Create user with all attributes
         user = User(username=content['username'],
-                    password=content['password'],
                     email=content['email'],
                     first_name=content['first_name'],
                     last_name=content['last_name'])
+        user.set_password(content['password'])
         user.save()
         token = user.create_token()
         user.send_token()

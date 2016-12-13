@@ -1,13 +1,14 @@
 # System imports
-from copy import copy
-from datetime import datetime
-from datetime import timedelta
+from copy import deepcopy
+from datetime import datetime, timedelta
+from docutils import core
 
-import brcrypt
+import bcrypt
 import config
 import hashlib
 import json
 import os
+import re
 import smtplib
 from urllib.request import urlopen
 
@@ -18,9 +19,8 @@ from email.mime.text import MIMEText
 from jinja2 import Template
 
 # Local source tree imports
-from core.exceptions import NappsEntryDoesNotExists
-from core.exceptions import InvalidAuthor
-from core.exceptions import InvalidNappMetaData
+from core.exceptions import (InvalidAuthor, InvalidNappMetaData,
+                             NappsEntryDoesNotExists, RepositoryNotReachable)
 
 con = config.CON
 
@@ -28,9 +28,7 @@ APP_ROOT = os.path.dirname(os.path.abspath(__file__))
 TEMPLATE_DIR = os.path.join(APP_ROOT, 'templates')
 
 class User(object):
-    """
-    Class to manage Users
-    """
+    """Class to manage Users"""
     schema = {
         "username": {"type": "string"},
         "first_name": {"type": "string"},
@@ -44,11 +42,9 @@ class User(object):
         "required": ["username", "first_name", "last_name", "password", "email"]
     }
 
-    def __init__(self, username, password, email, first_name, last_name,
+    def __init__(self, username, email, first_name, last_name,
                  phone=None, city=None, state=None, country=None, enabled=False):
-
         self.username = username
-        self.password = bcrypt.hashpw(password, bcrypt.gensalt()) # TODO: Crypt this
         self.email = email
         self.first_name = first_name
         self.last_name = last_name
@@ -60,7 +56,7 @@ class User(object):
 
     @property
     def redis_key(self):
-        return "user:%s" % self.username
+        return "user:{}".format(self.username)
 
     @property
     def token(self):
@@ -77,37 +73,44 @@ class User(object):
             return None
 
     @classmethod
-    def get(self, username):
+    def get(cls, username):
         attributes = con.hgetall("user:%s" % username)
         if attributes:
-            return User.from_dict(attributes)
+            user = User.from_dict(attributes)
+            user.password = attributes['password'].encode('utf-8')
+            return user
         else:
-            raise NappsEntryDoesNotExists("Username not found.")
+            raise NappsEntryDoesNotExists("User {} not found.".format(username))
 
     @classmethod
-    def all(self):
+    def all(cls):
         users = con.smembers("users")
-        return [User.from_dict(con.hgetall(user)) for user in users]
+        return [User.get(re.sub(r'^user:', '', user)) for user in users]
 
     @classmethod
-    def check_auth(username, password):
+    def check_auth(cls, username, password):
         try:
             user = User.get(username)
         except NappsEntryDoesNotExists:
             return False
 
-        if bcrypt.checkpw(password, user.password):
+        if not bcrypt.checkpw(password.encode('utf-8'), user.password):
             return False
         return True
 
     @classmethod
-    def from_dict(self, attributes):
+    def from_dict(cls, attributes):
         # TODO: Fix this hardcode attributes
-        return User(attributes['username'], attributes['password'],
-                    attributes['email'], attributes['first_name'],
-                    attributes['last_name'], attributes['phone'],
-                    attributes['city'], attributes['state'],
-                    attributes['country'], eval(attributes['enabled']))
+        user = User(attributes['username'], attributes['email'],
+                    attributes['first_name'], attributes['last_name'],
+                    attributes['phone'], attributes['city'],
+                    attributes['state'], attributes['country'],
+                    eval(attributes['enabled']))
+        return user
+
+    def set_password(self, password):
+        self.password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+        self.save()
 
     def disable(self):
         self.enabled = False
@@ -120,7 +123,7 @@ class User(object):
         self.save()
 
     def as_dict(self, hide_sensible=True, detailed=False):
-        result = copy(self.__dict__)
+        result = deepcopy(self.__dict__)
         if hide_sensible:
             del result['password']
 
@@ -139,6 +142,8 @@ class User(object):
 
         This is a save/update method. If the user already exists then update.
         """
+        if not self.password:
+            raise InvalidAuthor('Impossible to save a user without password.')
         con.sadd("users", self.redis_key)
         con.hmset(self.redis_key, self.as_dict(hide_sensible=False,
                                                detailed=True))
@@ -179,28 +184,20 @@ class User(object):
         self.send_email(html, 'Welcome to Kytos Napps Respository')
 
     def get_all_napps(self):
-        napps = con.smembers("%s:napps" % self.redis_key)
+        napps = con.smembers("{}:napps".format(self.redis_key))
         result = []
         # TODO: Improve this
         for napp in napps:
-            attributes = con.hgetall(napp)
-            napp_object = Napp()
-            napp_object.name = attributes['name']
-            napp_object.description = attributes['description']
-            napp_object.license = attributes['license']
-            napp_object.git = attributes['git']
-            napp_object.version = attributes['version']
-            napp_object.user = User.get(attributes['user'])
-            napp_object.tags = attributes['tags']
+            napp_object = Napp(con.hgetall(napp), self.username)
             result.append(napp_object)
         return result
 
     def get_napp_by_name(self, name):
-      napps = self.get_all_napps()
-      for napp in napps:
-        if napp.name == name:
-          return napp
-      return None
+        try:
+            napp = Napp(con.hgetall("napp:{}/{}".format(self.username, name)))
+            return napp
+        except:
+            raise NappsEntryDoesNotExists("Napp {} not found for user {}.".format(name, self.username))
 
     # TODO: Remove this from this class
     def render_template(self, filename, context):
@@ -222,14 +219,14 @@ class Token(object):
 
     @property
     def redis_key(self):
-        return "token:%s" % self.hash
+        return "token:{}".format(self.hash)
 
     @property
     def expires_at(self):
         return self.created_at + timedelta(seconds=self.expiration_time)
 
     @classmethod
-    def from_dict(self, attributes):
+    def from_dict(cls, attributes):
         # TODO: Fix this hardcode attributes
         return Token(attributes['hash'],
                      datetime.strptime(attributes['created_at'], '%Y-%m-%d %H:%M:%S.%f'),
@@ -237,7 +234,7 @@ class Token(object):
                      int(attributes['expiration_time']))
 
     @classmethod
-    def get(self, token):
+    def get(cls, token):
         attributes = con.hgetall("token:%s" % token)
         if attributes:
             return Token.from_dict(attributes)
@@ -255,9 +252,9 @@ class Token(object):
         self.save()
 
     def as_dict(self):
-        dict = copy(self.__dict__)
-        dict['user'] = self.user.username
-        return dict
+        token = deepcopy(self.__dict__)
+        token['user'] = self.user.username
+        return token
 
     def as_json(self):
         return json.dumps(self.as_dict())
@@ -275,72 +272,152 @@ class Token(object):
 
 
 class Napp(object):
-    def __init__(self, content=None, author=None):
-        if content is not None and author is not None:
-            self.user = author
-            self.update_from_dict(content)
+
+    schema = {
+        "name": {"type": "string"},
+        "description": {"type": "string"},
+        "long_description": {"type": "string"},
+        "version": {"type": "string"},
+        "author": {"type": "string"},
+        "license": {"type": "string"},
+        "git": {"type": "string"},
+        "branch": {"type": "string"},
+        "readme": {"type": "string"},  # To be read from README.rst
+        "ofversion": {"type": "array",
+                      "items": { "type": "string" },
+                      "minItems": 1,
+                      "uniqueItems": True },
+        "tags": {"type": "array",
+                 "items": { "type": "string" },
+                 "minItems": 1,
+                 "uniqueItems": True },
+        "dependencies": {"type": "array",
+                         "items": { "type": "string" },
+                         "minItems": 0,
+                         "uniqueItems": True },
+        "user": {"type": "string"},  # Not to be read from json.
+        "required": ["name", "description", "version", "author","license",
+                     "git", "branch", "ofversion", "tags", "dependencies"]
+    }
+
+    def __init__(self, content, user=None):
+        if user is not None:
+            if not isinstance(user, User):
+                user = User.get(user)
+        self.user = user
+        if content is not None:
+            self._populate_from_dict(content)
 
     @property
     def redis_key(self):
-        return "napp:%s/%s" % (self.user.username, self.name)
+        return "napp:{}/{}".format(self.author, self.name)
+
+    @property
+    def _url_for_raw_file_from_git(self):
+        url = re.sub('\.git\/?$', '/', self.git)
+        url += "raw/" + self.branch + "/" + self.author + "/"
+        url += self.name + "/"
+        return url
+
+    @property
+    def _json_from_git(self):
+        url = self._url_for_raw_file_from_git + 'kytos.json'
+        try:
+            buffer = urlopen(url)
+            metadata = str(buffer.read(), encoding="utf-8")
+            attributes = json.loads(metadata)
+            return attributes
+        except:
+            msg = 'The repository {} could not be reached'
+            raise RepositoryNotReachable(msg, url)
+
+    @property
+    def readme_rst(self):
+        if self.readme:
+            return self.readme
+        else:
+            return self.long_description
+
+    @property
+    def readme_html(self):
+        parts = core.publish_parts(source=self.readme_rst, writer_name='html')
+        return parts['body_pre_docinfo'] + parts['fragment']
+
+    def update_readme_from_git(self):
+        url = self._url_for_raw_file_from_git + 'README.rst'
+        try:
+            buffer = urlopen(url)
+            self.readme = str(buffer.read(), encoding="utf-8")
+        except:
+            msg = "Repository {} could not be reached."
+            raise RepositoryNotReachable(msg, url)
 
     @classmethod
-    def all(self):
+    def all(cls):
         napps = con.smembers("napps")
         result = []
         # TODO: Improve this
         for napp in napps:
             attributes = con.hgetall(napp)
-            napp_object = Napp()
-            napp_object.name = attributes['name']
-            napp_object.description = attributes['description']
-            napp_object.license = attributes['license']
-            napp_object.git = attributes['git']
-            napp_object.version = attributes['version']
-            napp_object.user = User.get(attributes['user'])
-            napp_object.tags = attributes['tags']
+            napp_object = Napp(attributes)
             result.append(napp_object)
         return result
 
+    def _populate_from_dict(self, attributes):
+        for key in self.schema.keys():
+            if key != 'required' and key !='user':
+                # This is a validation for required items...
+                # But it can be improved
+                if key in self.schema['required'] and key not in attributes:
+                    raise InvalidNappMetaData('Missing key {}'.format(key))
+
+                # Converting to list, if needed.
+                if self.schema[key]['type'] == 'array' and \
+                   not isinstance(attributes.get(key), list):
+                    attributes[key] = eval(attributes.get(key, []))
+
+                setattr(self, key, attributes.get(key))
+
+        if not self.readme:
+            try:
+                self.update_readme_from_git()
+            except:
+                pass
+
     @classmethod
+    def new_napp_from_dict(cls, attributes, user):
+        napp = cls(attributes, user)
+        if napp.user.username != napp.author:
+            raise InvalidAuthor
+        else:
+            napp.save()
+            return napp
+
     def update_from_dict(self, attributes):
-        try:
-            self.name = attributes['name']
-            self.description = attributes['description']
-            self.license = attributes['license']
-            self.git = attributes['git']
-            self.version = attributes['version']
-            self.tags = ",".join(attributes['tags'])
+        if self.user.username != attributes.author:
+            raise InvalidAuthor
+        else:
+            self._populate_from_dict(attributes)
             self.save()
-        except NappsEntryDoesNotExists:
-            raise InvalidNappMetaData
-        except KeyError:
-            raise InvalidNappMetaData
-
-        if attributes['author'] != self.user.username:
-          raise InvalidAuthor
-
-        self.save()
 
     def update_from_git(self):
-        if not self.git:
-            return False
-
-        url = self.git + "/raw/master/kytos.json"
-        buffer = urlopen(url)
-        metadata = str(buffer.read(), encoding="utf-8")
-        attributes = json.loads(metadata)
-        self.update_from_dict(attributes)
+        self.update_from_dict(self._json_from_git)
 
     def as_dict(self):
-        dict = copy(self.__dict__)
-        dict['user'] = self.user.username
-        return dict
+        data = {}
+        for key in self.schema:
+            if key != 'required':
+                if self.schema[key]['type'] is 'array':
+                    data[key] = getattr(self, key, [])
+                else:
+                    data[key] = getattr(self, key, '')
+        data['user'] = self.author
+        data['readme'] = self.readme_html
+        return data
 
     def as_json(self):
-        dict = self.as_dict()
-        dict['tags'] = self.tags.split(',')
-        return json.dumps(dict)
+        data = self.as_dict()
+        return json.dumps(data)
 
     def save(self):
         """ Save a object into redis database.
@@ -348,5 +425,5 @@ class Napp(object):
         This is a save/update method. If the app exists then update.
         """
         con.sadd("napps", self.redis_key)
-        con.sadd("user:%s:napps" % self.user.username, self.redis_key)
+        con.sadd("user:%s:napps" % self.author, self.redis_key)
         con.hmset(self.redis_key, self.as_dict())
