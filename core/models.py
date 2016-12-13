@@ -183,15 +183,15 @@ class User(object):
         # TODO: Improve this
         for napp in napps:
             attributes = con.hgetall(napp)
-            object = Napp()
-            object.name = attributes['name']
-            object.description = attributes['description']
-            object.license = attributes['license']
-            object.git = attributes['git']
-            object.version = attributes['version']
-            object.user = User.get(attributes['user'])
-            object.tags = attributes['tags']
-            result.append(object)
+            napp_object = Napp()
+            napp_object.name = attributes['name']
+            napp_object.description = attributes['description']
+            napp_object.license = attributes['license']
+            napp_object.git = attributes['git']
+            napp_object.version = attributes['version']
+            napp_object.user = User.get(attributes['user'])
+            napp_object.tags = attributes['tags']
+            result.append(napp_object)
         return result
 
     def get_napp_by_name(self, name):
@@ -206,6 +206,7 @@ class User(object):
         with open(os.path.join(TEMPLATE_DIR, filename), 'r') as f:
             template = Template(f.read())
             return template.render(context)
+
 
 class Token(object):
     """
@@ -271,12 +272,12 @@ class Token(object):
         con.sadd("tokens", self.redis_key)
         con.hmset(self.redis_key, self.as_dict())
 
+
 class Napp(object):
-    def __init__(self, repository=None, author=None):
-        if repository:
-            self.repository = repository
+    def __init__(self, content=None, author=None):
+        if content is not None and author is not None:
             self.user = author
-            self.update_from_repository()
+            self.update_from_dict(content)
 
     @property
     def redis_key(self):
@@ -289,32 +290,19 @@ class Napp(object):
         # TODO: Improve this
         for napp in napps:
             attributes = con.hgetall(napp)
-            object = Napp()
-            object.name = attributes['name']
-            object.description = attributes['description']
-            object.license = attributes['license']
-            object.git = attributes['git']
-            object.version = attributes['version']
-            object.user = User.get(attributes['user'])
-            object.tags = attributes['tags']
-            result.append(object)
+            napp_object = Napp()
+            napp_object.name = attributes['name']
+            napp_object.description = attributes['description']
+            napp_object.license = attributes['license']
+            napp_object.git = attributes['git']
+            napp_object.version = attributes['version']
+            napp_object.user = User.get(attributes['user'])
+            napp_object.tags = attributes['tags']
+            result.append(napp_object)
         return result
 
     @classmethod
-    def from_dict(self, attributes):
-        # TODO: Fix this to avoid get date from git repository
-        # We already have this on redis
-        return Napp(attributes['repository'])
-
-    def update_from_repository(self):
-        if not self.repository:
-            return False
-
-        url = self.repository + "/raw/master/kytos.json"
-        buffer = urlopen(url)        
-        metadata = str(buffer.read(), encoding="utf-8")
-        attributes = json.loads(metadata)
-        print(attributes)
+    def update_from_dict(self, attributes):
         try:
             self.name = attributes['name']
             self.description = attributes['description']
@@ -330,6 +318,18 @@ class Napp(object):
 
         if attributes['author'] != self.user.username:
           raise InvalidAuthor
+
+        self.save()
+
+    def update_from_git(self):
+        if not self.git:
+            return False
+
+        url = self.git + "/raw/master/kytos.json"
+        buffer = urlopen(url)
+        metadata = str(buffer.read(), encoding="utf-8")
+        attributes = json.loads(metadata)
+        self.update_from_dict(attributes)
 
     def as_dict(self):
         dict = copy(self.__dict__)
