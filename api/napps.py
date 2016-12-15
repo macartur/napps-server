@@ -47,7 +47,7 @@ def get_napp(author, name):
     napp = user.get_napp_by_name(name)
     if napp is None:
         return jsonify({
-            'error': 'Napp {} not found for the user {}'.format(name, author)
+            'error': 'NApp {} not found for the author {}'.format(name, author)
         }), 404
 
     return jsonify(napp.as_dict()), 200
