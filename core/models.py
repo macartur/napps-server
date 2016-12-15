@@ -426,4 +426,6 @@ class Napp(object):
         """
         con.sadd("napps", self.redis_key)
         con.sadd("user:%s:napps" % self.author, self.redis_key)
-        con.hmset(self.redis_key, self.as_dict())
+        data = self.as_dict()
+        data['readme'] = self.readme_rst
+        con.hmset(self.redis_key, data)
