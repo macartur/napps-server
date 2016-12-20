@@ -1,40 +1,46 @@
-from flask import jsonify
-from flask import request, Response
-from jsonschema import validate
-from jsonschema import ValidationError
+"""Module with main decoretors used by napps-server."""
 from functools import wraps
 
-from napps_server.core.models import User, Token
+from flask import Response, jsonify, request
+from jsonschema import ValidationError, validate
+
 from napps_server.core.exceptions import NappsEntryDoesNotExists
+from napps_server.core.models import Token, User
+
 
 def validate_json(f):
+    """Method used to validate a json from request."""
     @wraps(f)
-    def wrapper(*args, **kw):
+    def wrapper(*args, **kwargs):
         if request.get_json() is None:
             return jsonify({'error': "Payload must be a valid json"}), 400
-        return f(*args, **kw)
+        return f(*args, **kwargs)
     return wrapper
 
+
 def validate_schema(schema):
+    """Method used to validate a json from request using a schema."""
     def decorator(f):
         @wraps(f)
-        def wrapper(*args, **kw):
+        def wrapper(*args, **kwargs):
             try:
-                validate(request.json, schema)
+                validate(request.get_json(), schema)
             except ValidationError as e:
                 return Response(e.message, 400)
-            return f(*args, **kw)
+            return f(*args, **kwargs)
         return wrapper
     return decorator
 
+
 def authenticate():
-    """Sends a 401 response that enables basic auth"""
-    return Response(
-    'Could not verify your access level for that URL.\n'
-    'You have to login with proper credentials', 401,
-    {'WWW-Authenticate': 'Basic realm="Login Required"'})
+    """Method used to send a 401 response that enables basic auth."""
+    return Response('Could not verify your access level for that URL.\n'
+                    'You have to login with proper credentials', 401,
+                    {'WWW-Authenticate': 'Basic realm="Login Required"'})
+
 
 def requires_auth(f):
+    """Method used to handle user authentications."""
     @wraps(f)
     def wrapper(*args, **kwargs):
         auth = request.authorization
@@ -43,7 +49,9 @@ def requires_auth(f):
         return f(*args, **kwargs)
     return wrapper
 
+
 def requires_token(f):
+    """Method used to handle tokens from requests."""
     @wraps(f)
     def wrapper(*args, **kwargs):
         content = request.get_json()

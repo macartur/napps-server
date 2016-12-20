@@ -1,28 +1,25 @@
 # System imports
-from copy import deepcopy
-from datetime import datetime, timedelta
-from docutils import core
-
-import bcrypt
 import hashlib
 import json
 import os
 import re
 import smtplib
-from urllib.request import urlopen
-
+from copy import deepcopy
+from datetime import datetime, timedelta
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from urllib.request import urlopen
 
+import bcrypt
+from docutils import core
 # Third-party imports
 from jinja2 import Template
 
+from napps_server import config
 # Local source tree imports
 from napps_server.core.exceptions import (InvalidAuthor, InvalidNappMetaData,
                                           NappsEntryDoesNotExists,
                                           RepositoryNotReachable)
-
-from napps_server import config
 
 con = config.CON
 

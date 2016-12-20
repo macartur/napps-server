@@ -1,9 +1,7 @@
 # System imports
 
 # Third-party imports
-from flask import Blueprint
-from flask import request
-from flask import jsonify
+from flask import Blueprint, jsonify, request
 
 # Local source tree imports
 from napps_server.core.decorators import requires_auth

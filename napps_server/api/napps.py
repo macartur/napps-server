@@ -1,17 +1,13 @@
 # System imports
 
 # Third-party imports
-from flask import Blueprint
-from flask import jsonify
-from flask import request
-from flask import Response
+from flask import Blueprint, Response, jsonify, request
 
+from napps_server.core.decorators import requires_token, validate_json
+from napps_server.core.exceptions import (InvalidAuthor, InvalidNappMetaData,
+                                          NappsEntryDoesNotExists)
 # Local source tree imports
-from napps_server.core.models import Token, Napp, User
-from napps_server.core.decorators import (validate_json, requires_token)
-from napps_server.core.exceptions import NappsEntryDoesNotExists
-from napps_server.core.exceptions import InvalidAuthor
-from napps_server.core.exceptions import InvalidNappMetaData
+from napps_server.core.models import Napp, Token, User
 
 # Flask Blueprints
 api = Blueprint('napp_api', __name__)
