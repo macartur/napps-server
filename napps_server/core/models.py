@@ -67,6 +67,17 @@ class User(object):
         self.enabled = enabled
         self.password = None
 
+    @classmethod
+    def attributes(cls):
+        """Method used to return a set of attributes from User class.
+
+        Returns:
+            attributes_name (set): Set of attributes.
+        """
+        excludes = set(['required'])
+        attributes_names = set(User.schema)
+        return attributes_names.difference(excludes)
+
     @property
     def redis_key(self):
         """Method used to built a redis key.
@@ -78,7 +89,7 @@ class User(object):
 
     @property
     def token(self):
-        """Method to create a valid token.
+        """Method used to return a token from User instance.
 
         Returns:
             token (string): key to identify a user.
@@ -147,19 +158,21 @@ class User(object):
 
     @classmethod
     def from_dict(cls, attributes):
-        """Method to create a user based on JSON attributes.
+        """Method to create a user based on attributes from a dict.
 
         Paramters:
-            attributes (string): JSON with user attributes.
+            attributes (dict): Dict with user attributes.
         Returns:
-            user (napps.core.models.User): User class built from JSON string.
+            user (:class:`napps.core.models.User`): User class built from dict.
         """
-        # TODO: Fix this hardcode attributes
         user = User(attributes['username'], attributes['email'],
-                    attributes['first_name'], attributes['last_name'],
-                    attributes['phone'], attributes['city'],
-                    attributes['state'], attributes['country'],
-                    eval(attributes['enabled']))
+                    attributes['first_name'], attributes['last_name'])
+
+        for attribute in User.attributes():
+            setattr(user, attribute, attributes.get(attribute, None))
+
+        user.enabled = attributes.get('enabled', False)
+
         return user
 
     def set_password(self, password):
@@ -313,8 +326,7 @@ class Token(object):
                                    created.
             user (:class:`napps_server.core.models.User`):
                 User that this token belong.
-            expiration_time (int): integer to expire this token.
-
+            expiration_time (int): integer to represent token lifetime.
         """
         self.hash = hash_value if hash_value else generate_hash()
         self.created_at = created_at if created_at else datetime.utcnow()
@@ -323,7 +335,7 @@ class Token(object):
 
     @property
     def redis_key(self):
-        """Method used to built a redis key.
+        """Method used to build a redis key.
 
         Returns:
             key (string): String with redis key.
@@ -405,7 +417,8 @@ class Token(object):
         Returns:
             json (string): JSON with attributes of current token instance.
         """
-        return json.dumps(self.as_dict())
+        token_dict = self.as_dict()
+        return json.dumps(token_dict)
 
     def assign_to_user(self, user):
         """Method used to change the token user.
@@ -486,7 +499,7 @@ class Napp(object):
         """Method used to return a url for raw file from git.
 
         Returns:
-            url (string): url string from git.
+            url (string): A URL from git.
         """
         url = re.sub(r'.git/?$', '/', self.git)
         url += "raw/" + self.branch + "/" + self.author + "/"
@@ -568,7 +581,7 @@ class Napp(object):
                 # Converting to list, if needed.
                 if self.schema[key]['type'] == 'array' and \
                    not isinstance(attributes.get(key), list):
-                    attributes[key] = eval(attributes.get(key, []))
+                    attributes[key] = attributes.get(key, [])
 
                 setattr(self, key, attributes.get(key))
 
