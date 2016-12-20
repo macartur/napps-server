@@ -4,8 +4,8 @@ from jsonschema import validate
 from jsonschema import ValidationError
 from functools import wraps
 
-from core.models import User, Token
-from core.exceptions import NappsEntryDoesNotExists
+from napps_server.core.models import User, Token
+from napps_server.core.exceptions import NappsEntryDoesNotExists
 
 def validate_json(f):
     @wraps(f)

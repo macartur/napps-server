@@ -4,7 +4,6 @@ from datetime import datetime, timedelta
 from docutils import core
 
 import bcrypt
-import config
 import hashlib
 import json
 import os
@@ -19,8 +18,11 @@ from email.mime.text import MIMEText
 from jinja2 import Template
 
 # Local source tree imports
-from core.exceptions import (InvalidAuthor, InvalidNappMetaData,
-                             NappsEntryDoesNotExists, RepositoryNotReachable)
+from napps_server.core.exceptions import (InvalidAuthor, InvalidNappMetaData,
+                                          NappsEntryDoesNotExists,
+                                          RepositoryNotReachable)
+
+from napps_server import config
 
 con = config.CON
 

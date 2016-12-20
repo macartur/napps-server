@@ -6,7 +6,7 @@ from flask import Blueprint
 from flask import jsonify
 
 # Local source tree imports
-import config
+from napps_server import config
 
 con = config.CON
 

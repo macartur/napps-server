@@ -6,10 +6,10 @@ from flask import jsonify
 from flask import request
 
 # Local source tree imports
-from core.models import User
-from core.decorators import (validate_json, validate_schema)
+from napps_server.core.models import User
+from napps_server.core.decorators import (validate_json, validate_schema)
 
-from core.exceptions import NappsEntryDoesNotExists
+from napps_server.core.exceptions import NappsEntryDoesNotExists
 
 # Flask Blueprints
 api = Blueprint('user_api', __name__)

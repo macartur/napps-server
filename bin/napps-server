@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 # System imports
 from datetime import timedelta
 
@@ -5,11 +7,11 @@ from datetime import timedelta
 from flask import Flask
 
 # Local source tree imports
-from api import auth
-#from api import comments
-#from api import common
-from api import napps
-from api import users
+from napps_server.api import auth
+#from napps_server.api import comments
+#from napps_server.api import common
+from napps_server.api import napps
+from napps_server.api import users
 
 app = Flask(__name__)
 

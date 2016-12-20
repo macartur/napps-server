@@ -7,11 +7,11 @@ from flask import request
 from flask import Response
 
 # Local source tree imports
-from core.models import Token, Napp, User
-from core.decorators import (validate_json, requires_token)
-from core.exceptions import NappsEntryDoesNotExists
-from core.exceptions import InvalidAuthor
-from core.exceptions import InvalidNappMetaData
+from napps_server.core.models import Token, Napp, User
+from napps_server.core.decorators import (validate_json, requires_token)
+from napps_server.core.exceptions import NappsEntryDoesNotExists
+from napps_server.core.exceptions import InvalidAuthor
+from napps_server.core.exceptions import InvalidNappMetaData
 
 # Flask Blueprints
 api = Blueprint('napp_api', __name__)
