@@ -12,6 +12,7 @@ def validate_json(f):
     """Method used to validate a json from request."""
     @wraps(f)
     def wrapper(*args, **kwargs):
+        """Wrapper called to validate a json from request."""
         if request.get_json() is None:
             return jsonify({'error': "Payload must be a valid json"}), 400
         return f(*args, **kwargs)
@@ -21,8 +22,10 @@ def validate_json(f):
 def validate_schema(schema):
     """Method used to validate a json from request using a schema."""
     def decorator(f):
+        """Decorator to be called when validate_schema is called."""
         @wraps(f)
         def wrapper(*args, **kwargs):
+            """Wrapper to validate the schema."""
             try:
                 validate(request.get_json(), schema)
             except ValidationError as e:
@@ -40,9 +43,10 @@ def authenticate():
 
 
 def requires_auth(f):
-    """Method used to handle user authentications."""
+    """Method used to handle user authentication."""
     @wraps(f)
     def wrapper(*args, **kwargs):
+        """Wrapper to verify the user authentication."""
         auth = request.authorization
         if not auth or not User.check_auth(auth.username, auth.password):
             return authenticate()
@@ -54,6 +58,7 @@ def requires_token(f):
     """Method used to handle tokens from requests."""
     @wraps(f)
     def wrapper(*args, **kwargs):
+        """Wrapper used to verify the requires of token."""
         content = request.get_json()
         try:
             token = Token.get(content['token'])

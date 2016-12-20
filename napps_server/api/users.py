@@ -31,11 +31,15 @@ def register_user():
         User.get(content['username'])
         return jsonify({"error": "Username already exists"}), 401
     except NappsEntryDoesNotExists:
-        # TODO: Create user with all attributes
-        user = User(username=content['username'],
-                    email=content['email'],
-                    first_name=content['first_name'],
-                    last_name=content['last_name'])
+        user = User(username=content.get('username', ''),
+                    email=content.get('email', ''),
+                    first_name=content.get('first_name', ''),
+                    last_name=content('last_name', ''),
+                    phone=content.get('phone', None),
+                    city=content.get('city', None),
+                    state=content.get('state', None),
+                    country=content.get('country', None))
+
         user.set_password(content['password'])
         user.save()
         user.create_token()

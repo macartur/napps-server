@@ -1,9 +1,7 @@
 """Module with main abstraction of models used by napps-server."""
 
 # System imports
-import hashlib
 import json
-import os
 import re
 import smtplib
 from copy import deepcopy
@@ -14,19 +12,15 @@ from urllib.request import urlopen
 
 import bcrypt
 from docutils import core
-# Third-party imports
-from jinja2 import Template
 
 from napps_server import config
 # Local source tree imports
 from napps_server.core.exceptions import (InvalidAuthor, InvalidNappMetaData,
                                           NappsEntryDoesNotExists,
                                           RepositoryNotReachable)
+from napps_server.core.utils import generate_hash, render_template
 
 con = config.CON
-
-APP_ROOT = os.path.dirname(os.path.abspath(__file__))
-TEMPLATE_DIR = os.path.join(APP_ROOT, 'templates')
 
 
 class User(object):
@@ -266,7 +260,7 @@ class User(object):
         context = {'username': self.username,
                    'token': self.token.hash}
 
-        html = self.render_template('confirm_user.phtml', context)
+        html = render_template('confirm_user.phtml', context)
         self.send_email(html, 'Kytos Napps Repository: Confirm your account')
 
     def send_welcome(self):
@@ -275,7 +269,7 @@ class User(object):
             return False
 
         context = {'username': self.username}
-        html = self.render_template('welcome.phtml', context)
+        html = render_template('welcome.phtml', context)
         self.send_email(html, 'Welcome to Kytos Napps Respository')
 
     def get_all_napps(self):
@@ -304,14 +298,6 @@ class User(object):
             msg = "Napp {} not found for user {}.".format(name, self.username)
             raise NappsEntryDoesNotExists(msg)
 
-    # TODO: Remove this from this class
-    @classmethod
-    def render_template(cls, filename, context):
-        """Method used to render the user page."""
-        with open(os.path.join(TEMPLATE_DIR, filename), 'r') as f:
-            template = Template(f.read())
-            return template.render(context)
-
 
 class Token(object):
     """Class to manage Tokens Models."""
@@ -330,7 +316,7 @@ class Token(object):
             expiration_time (int): integer to expire this token.
 
         """
-        self.hash = hash_value if hash_value else self.generate()
+        self.hash = hash_value if hash_value else generate_hash()
         self.created_at = created_at if created_at else datetime.utcnow()
         self.user = user
         self.expiration_time = expiration_time
@@ -394,14 +380,6 @@ class Token(object):
             is_valid (bool): True if this token is valid yet, otherwsise False.
         """
         return datetime.utcnow() <= self.expires_at
-
-    def generate(self):
-        """Method used to generate a new hash.
-
-        Returns:
-            hash (string): String with a hash generated.
-        """
-        return hashlib.sha256(os.urandom(128)).hexdigest()
 
     def invalidate(self):
         """Method used to invalidate a token instance.
@@ -492,6 +470,8 @@ class Napp(object):
         if content is not None:
             self._populate_from_dict(content)
 
+        self.readme = ""
+
     @property
     def redis_key(self):
         """Method used to built a redis key.
@@ -570,13 +550,7 @@ class Napp(object):
             napps (list): List with all napps registered.
         """
         napps = con.smembers("napps")
-        result = []
-        # TODO: Improve this
-        for napp in napps:
-            attributes = con.hgetall(napp)
-            napp_object = Napp(attributes)
-            result.append(napp_object)
-        return result
+        return [Napp(con.hgetall(napp)) for napp in napps]
 
     def _populate_from_dict(self, attributes):
         """Method used to populate a Napp instance based on python dict.
@@ -601,7 +575,7 @@ class Napp(object):
         if not self.readme:
             try:
                 self.update_readme_from_git()
-            except:
+            except RepositoryNotReachable:
                 pass
 
     @classmethod
