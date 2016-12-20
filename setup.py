@@ -1,4 +1,8 @@
-""""""
+"""Setup script.
+
+Run "python3 setup --help-commands" to list all available commands and their
+descriptions.
+"""
 import os
 import sys
 from abc import abstractmethod
@@ -6,6 +10,7 @@ from subprocess import CalledProcessError, call, check_call
 
 from pip.req import parse_requirements
 from setuptools import Command, find_packages, setup
+from napps_server import __version__
 
 if 'bdist_wheel' in sys.argv:
     raise RuntimeError("This setup.py does not support wheels")
@@ -79,11 +84,12 @@ class Cleaner(SimpleCommand):
         call('rm -vrf ./build ./dist ./*.pyc ./*.egg-info', shell=True)
         call('make -C docs clean', shell=True)
 
+
 # parse_requirements() returns generator of pip.req.InstallRequirement objects
 requirements = parse_requirements('requirements.txt', session=False)
 
 setup(name='napps-server',
-      version='1.1.0b1.dev0',
+      version=__version__,
       description='',
       url='http://github.com/kytos/napps-server',
       author='Kytos Team',
