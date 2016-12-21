@@ -1,23 +1,24 @@
+"""Method used to perform user authentication."""
+
 # System imports
 
 # Third-party imports
-from flask import Blueprint
-from flask import request
-from flask import jsonify
+from flask import Blueprint, jsonify, request
 
 # Local source tree imports
-from core.decorators import requires_auth
-from core.exceptions import NappsEntryDoesNotExists
-from core.models import User
+from napps_server.core.decorators import requires_auth
+from napps_server.core.exceptions import NappsEntryDoesNotExists
+from napps_server.core.models import User
 
 # Flask Blueprints
 api = Blueprint('auth_api', __name__)
 
+
 @api.route("/auth/", methods=["POST"])
 @requires_auth
 def napps_auth():
-    """
-    Endpoint to perform the authentication
+    """Endpoint to perform the authentication.
+
     :return: A token to the user
     """
     try:

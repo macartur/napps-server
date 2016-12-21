@@ -1,0 +1,3 @@
+include *.txt
+include schema_redis.nosql
+include kytos.json

@@ -1,17 +1,14 @@
+"""Module used to make avaliable napps routes."""
 # System imports
 
 # Third-party imports
-from flask import Blueprint
-from flask import jsonify
-from flask import request
-from flask import Response
+from flask import Blueprint, Response, jsonify, request
 
+from napps_server.core.decorators import requires_token, validate_json
+from napps_server.core.exceptions import (InvalidAuthor, InvalidNappMetaData,
+                                          NappsEntryDoesNotExists)
 # Local source tree imports
-from core.models import Token, Napp, User
-from core.decorators import (validate_json, requires_token)
-from core.exceptions import NappsEntryDoesNotExists
-from core.exceptions import InvalidAuthor
-from core.exceptions import InvalidNappMetaData
+from napps_server.core.models import Napp, User
 
 # Flask Blueprints
 api = Blueprint('napp_api', __name__)
@@ -19,23 +16,34 @@ api = Blueprint('napp_api', __name__)
 
 @api.route('/napps/', methods=['GET'])
 def get_napps():
-    """
-    This routine creates an endpoint that shows all network applications.
-    It returns all information in JSON format.
+    """Method used to shows all network applications.
+
+    This method creates the '/napps/' endpoint to show all network applications
+    as a json format.
+
+    Returns:
+        json (string): Strnig with all information in JSON format.
     """
     napps = [napp.as_dict() for napp in Napp.all()]
     params = request.args
     length = params.get('length')
     if length and int(length) > 0:
         napps = napps[0:int(length)]
-    return jsonify({'napps': napps }), 200
+    return jsonify({'napps': napps}), 200
 
 
 @api.route('/napps/<author>/<name>/', methods=['GET'])
 def get_napp(author, name):
-    """
-    This routine creates an endpoint that shows a detailed napp information.
-    It returns all information in JSON format.
+    """Method used to show a detailed napp information.
+
+    This method creates the '/napps/<author>/<name>' endpoint that shows a
+    detailed napp information as a json format.
+
+    Parameters:
+        author (string): Author name.
+        name (string): Napp name.
+    Returns
+        json (string): String with all information in JSON format.
     """
     try:
         user = User.get(author)
@@ -57,17 +65,20 @@ def get_napp(author, name):
 @requires_token
 @validate_json
 def register_napp(user):
-    """
-    This endpoint will be used to register a new Network Application (napp).
+    """Method to register a new Network Application.
+
+    This method creates the '/napps' endpoint to register a new Network
+    Application.
+
     :return: Return HTTP code 201 if napp were succesfully created and 4XX in
     case of failure.
     """
     content = request.get_json()
-    if not user.enabled or not content['author'] == user.username :
+    if not user.enabled or not content['author'] == user.username:
         return Response("Permission denied", 401)
 
     try:
-        napp = Napp.new_napp_from_dict(content, user)
+        Napp.new_napp_from_dict(content, user)
     except InvalidAuthor:
         return Response("Permission denied. Invalid Author.", 401)
     except InvalidNappMetaData:
