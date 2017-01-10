@@ -171,7 +171,7 @@ class User(object):
         for attribute in User.attributes():
             setattr(user, attribute, attributes.get(attribute, None))
 
-        user.enabled = attributes.get('enabled', False)
+        user.enabled = eval(attributes.get('enabled', False))
 
         return user
 
@@ -581,7 +581,7 @@ class Napp(object):
                 # Converting to list, if needed.
                 if self.schema[key]['type'] == 'array' and \
                    not isinstance(attributes.get(key), list):
-                    attributes[key] = attributes.get(key, [])
+                    attributes[key] = eval(attributes.get(key, []))
 
                 setattr(self, key, attributes.get(key))
 
