@@ -12,6 +12,7 @@ from napps_server.api import auth
 #from napps_server.api import common
 from napps_server.api import napps
 from napps_server.api import users
+from napps_server.ui import user_ui
 
 app = Flask(__name__)
 
@@ -23,6 +24,9 @@ app.register_blueprint(users.api)
 
 # Expose application endpoints
 app.register_blueprint(napps.api)
+
+# Expose graphic interface
+app.register_blueprint(user_ui.app)
 
 # Expose comments endpoints
 #common.app.register_blueprint(comments.api)

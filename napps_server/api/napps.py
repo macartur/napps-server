@@ -32,8 +32,9 @@ def get_napps():
     return jsonify({'napps': napps}), 200
 
 
+@api.route('/napps/<author>/', methods=['GET'])
 @api.route('/napps/<author>/<name>/', methods=['GET'])
-def get_napp(author, name):
+def get_napp(author, name=''):
     """Method used to show a detailed napp information.
 
     This method creates the '/napps/<author>/<name>' endpoint that shows a
@@ -52,8 +53,13 @@ def get_napp(author, name):
             'error': 'Author {} not found'.format(author)
         }), 404
 
-    napp = user.get_napp_by_name(name)
-    if napp is None:
+    if not name:
+        napps = [napp.as_dict() for napp in user.get_all_napps()]
+        return jsonify(napps), 200
+
+    try:
+        napp = user.get_napp_by_name(name)
+    except NappsEntryDoesNotExists:
         return jsonify({
             'error': 'NApp {} not found for the author {}'.format(name, author)
         }), 404

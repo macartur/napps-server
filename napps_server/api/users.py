@@ -34,7 +34,7 @@ def register_user():
         user = User(username=content.get('username', ''),
                     email=content.get('email', ''),
                     first_name=content.get('first_name', ''),
-                    last_name=content('last_name', ''),
+                    last_name=content.get('last_name', ''),
                     phone=content.get('phone', None),
                     city=content.get('city', None),
                     state=content.get('state', None),

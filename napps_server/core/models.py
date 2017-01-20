@@ -20,7 +20,8 @@ from napps_server.core.exceptions import (InvalidAuthor, InvalidNappMetaData,
                                           RepositoryNotReachable)
 from napps_server.core.utils import generate_hash, render_template
 
-con = config.CON
+db_con = config.DB_CON
+napps_server_url = config.NAPPS_SERVER_URL
 
 
 class User(object):
@@ -95,11 +96,11 @@ class User(object):
             token (string): key to identify a user.
         """
         try:
-            key = con.lrange("%s:tokens" % self.redis_key, 0, 0)[0]
+            key = db_con.lrange("%s:tokens" % self.redis_key, 0, 0)[0]
         except IndexError:
             return None
 
-        attributes = con.hgetall(key)
+        attributes = db_con.hgetall(key)
         token = Token.from_dict(attributes)
         if token.is_valid():
             return token
@@ -117,7 +118,7 @@ class User(object):
             user (:class:`napps.core.models.User`):
                 User class with the given username.
         """
-        attributes = con.hgetall("user:%s" % username)
+        attributes = db_con.hgetall("user:%s" % username)
         if attributes:
             user = User.from_dict(attributes)
             user.password = attributes['password'].encode('utf-8')
@@ -133,7 +134,7 @@ class User(object):
         Returns:
             users (list): List of users registered.
         """
-        users = con.smembers("users")
+        users = db_con.smembers("users")
         return [User.get(re.sub(r'^user:', '', user)) for user in users]
 
     @classmethod
@@ -235,9 +236,9 @@ class User(object):
         """
         if not self.password:
             raise InvalidAuthor('Impossible to save a user without password.')
-        con.sadd("users", self.redis_key)
-        con.hmset(self.redis_key, self.as_dict(hide_sensible=False,
-                                               detailed=True))
+        db_con.sadd("users", self.redis_key)
+        db_con.hmset(self.redis_key, self.as_dict(hide_sensible=False,
+                                                  detailed=True))
 
     def create_token(self, expiration_time=86400):
         """Method used to create a valid token.
@@ -250,7 +251,7 @@ class User(object):
         """
         token = Token(user=self, expiration_time=expiration_time)
         token.save()
-        con.lpush("%s:tokens" % self.redis_key, token.redis_key)
+        db_con.lpush("%s:tokens" % self.redis_key, token.redis_key)
         return token
 
     def send_email(self, template, subject):
@@ -262,15 +263,19 @@ class User(object):
         part1 = MIMEText(template, 'html')
         message.attach(part1)
         smtp = smtplib.SMTP('localhost')
-        smtp.sendmail('no-reply@kytos.io', self.email, message.as_string())
-        smtp.quit()
+        try:
+            smtp.sendmail('no-reply@kytos.io', self.email, message.as_string())
+            smtp.quit()
+        except smtplib.SMTPRecipientsRefused:
+            print('Error trying to send smtp message')
 
     def send_token(self):
         """Method used to send a message with a valid token to a user."""
         if not self.token:
             return False
 
-        context = {'username': self.username,
+        context = {'napps_server': napps_server_url,
+                   'username': self.username,
                    'token': self.token.hash}
 
         html = render_template('confirm_user.phtml', context)
@@ -291,8 +296,8 @@ class User(object):
         Returns:
             napps (list): list of Napps from this user.
         """
-        napps = con.smembers("{}:napps".format(self.redis_key))
-        return [Napp(con.hgetall(napp), self.username) for napp in napps]
+        napps = db_con.smembers("{}:napps".format(self.redis_key))
+        return [Napp(db_con.hgetall(napp), self.username) for napp in napps]
 
     def get_napp_by_name(self, name):
         """Method used to return Napp with specific name.
@@ -305,7 +310,8 @@ class User(object):
                 Napp found with the given name.
         """
         try:
-            napp = Napp(con.hgetall("napp:{}/{}".format(self.username, name)))
+            napp = Napp(db_con.hgetall("napp:{}/{}".format(self.username,
+                                                           name)))
             return napp
         except:
             msg = "Napp {} not found for user {}.".format(name, self.username)
@@ -379,7 +385,7 @@ class Token(object):
             token (:class:`napps_server.core.models.Token`):
                 Token found from the given token hash.
         """
-        attributes = con.hgetall("token:%s" % token)
+        attributes = db_con.hgetall("token:%s" % token)
         if attributes:
             return Token.from_dict(attributes)
         else:
@@ -434,8 +440,8 @@ class Token(object):
 
         This is a save/update method. If the token exists then update.
         """
-        con.sadd("tokens", self.redis_key)
-        con.hmset(self.redis_key, self.as_dict())
+        db_con.sadd("tokens", self.redis_key)
+        db_con.hmset(self.redis_key, self.as_dict())
 
 
 class Napp(object):
@@ -562,8 +568,8 @@ class Napp(object):
         Returns:
             napps (list): List with all napps registered.
         """
-        napps = con.smembers("napps")
-        return [Napp(con.hgetall(napp)) for napp in napps]
+        napps = db_con.smembers("napps")
+        return [Napp(db_con.hgetall(napp)) for napp in napps]
 
     def _populate_from_dict(self, attributes):
         """Method used to populate a Napp instance based on python dict.
@@ -571,7 +577,7 @@ class Napp(object):
         Parameters:
             attributes (dict): Attributes of a Napp instance.
         """
-        for key in self.schema.keys():
+        for key in self.schema:
             if key != 'required' and key != 'user':
                 # This is a validation for required items...
                 # But it can be improved
@@ -658,8 +664,8 @@ class Napp(object):
 
         This is a save/update method. If the app exists then update.
         """
-        con.sadd("napps", self.redis_key)
-        con.sadd("user:%s:napps" % self.author, self.redis_key)
+        db_con.sadd("napps", self.redis_key)
+        db_con.sadd("user:%s:napps" % self.author, self.redis_key)
         data = self.as_dict()
         data['readme'] = self.readme_rst
-        con.hmset(self.redis_key, data)
+        db_con.hmset(self.redis_key, data)
