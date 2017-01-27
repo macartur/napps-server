@@ -240,6 +240,16 @@ class User(object):
         db_con.hmset(self.redis_key, self.as_dict(hide_sensible=False,
                                                   detailed=True))
 
+    def delete(self):
+        """Delete a object into redis databse."""
+        if not self.password:
+            msg = 'Impossible to delete a user without password.'
+            raise InvalidAuthor(msg)
+        if db_con.delete(self.redis_key) == 0 or \
+           db_con.srem('users', self.redis_key) == 0:
+            return False
+        return True
+
     def create_token(self, expiration_time=86400):
         """Method used to create a valid token.
 
@@ -482,10 +492,7 @@ class Napp(object):
             user (:class:`napps_server.core.models.User`):
                 Associate a user that belongs this Napp.
         """
-        if user is not None:
-            if not isinstance(user, User):
-                user = User.get(user)
-        self.user = user
+        self.user = User.get(content['author'])
         if content is not None:
             self._populate_from_dict(content)
 
@@ -669,3 +676,15 @@ class Napp(object):
         data = self.as_dict()
         data['readme'] = self.readme_rst
         db_con.hmset(self.redis_key, data)
+
+    def delete(self):
+        """Delete a object from redis database."""
+        if not self.user.password:
+            msg = 'Impossible to delete a napp without password.'
+            raise InvalidAuthor(msg)
+
+        if db_con.delete(self.redis_key) == 0 or \
+           db_con.srem('napps', self.redis_key) == 0 or \
+           db_con.srem('{}:napps'.format(self.user.redis_key), self.redis_key):
+            return False
+        return True

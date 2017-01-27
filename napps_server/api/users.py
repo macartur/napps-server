@@ -5,6 +5,7 @@
 from flask import Blueprint, jsonify, request
 
 from napps_server.core.decorators import validate_json, validate_schema
+from napps_server.core.decorators import requires_token
 from napps_server.core.exceptions import NappsEntryDoesNotExists
 # Local source tree imports
 from napps_server.core.models import User
@@ -114,3 +115,14 @@ def confirm_user(username, token):
     user.token.invalidate()
     user.send_welcome()
     return '', 200
+
+@api.route("/users/<username>", methods=['DELETE'])
+@requires_token
+def delete_user(username):
+    try:
+       user = User.get(username)
+       user.delete()
+    except NappsEntryDoesNotExists:
+        return jsonify({"error": "User not found."}), 404
+    msg = 'The user {} was deleted.'.format(username)
+    return jsonify({'success': msg })
