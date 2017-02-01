@@ -18,9 +18,9 @@
                     <label>
                     {{field[0].title().replace('_', ' ') }}
                     {% if field[0] in context['fields_required'] %}
-                     * <input type='{{field[1]}}' name={{field[0]}} placeholdere='{{field[0]}}' pattern="^[a-zA-Z0-9]+$" required>
+                     * <input type='{{field[1]}}' name={{field[0]}} placeholdere='{{field[0]}}' required>
                     {% else %}
-                      <input type='{{field[1]}}' name={{field[0]}} placeholdere='{{field[0]}}' pattern="^[a-zA-Z0-9]+$" >
+                      <input type='{{field[1]}}' name={{field[0]}} placeholdere='{{field[0]}}'>
                     {% endif %}
                     </label>
                   {% endfor %}

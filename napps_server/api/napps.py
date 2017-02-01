@@ -106,6 +106,8 @@ def delete_napp(author, name):
     Returns
         json (string): String with all information in JSON format.
     """
+    content = request.get_json()
+    token = content.get('token', None)
 
     try:
         user = User.get(author)
@@ -120,10 +122,14 @@ def delete_napp(author, name):
         msg = 'NApp {} not found for the author {}'.format(name, author)
         return jsonify({'error': msg}), 404
 
+    if token != user.token.hash:
+        msg = 'Napp can\'t be deleted by the author {} '.format(name, author)
+        return jsonify({'error': msg}), 404
+
     try:
         napp.delete()
     except NappsEntryDoesNotExists:
-        msg = 'Napp {} can\'t be deleted.'
+        msg = 'Napp {} can\'t be deleted.'.format(name)
         return  jsonify({'error': msg }), 404
 
     msg = 'Napp {} was deleted.'
