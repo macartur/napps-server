@@ -241,10 +241,14 @@ class User(object):
                                                   detailed=True))
 
     def delete(self):
-        """Delete a object into redis databse."""
+        """Delete a object into redis databse.
+
+        This method will delete the user instance and yours napps.
+        """
         if not self.password:
             msg = 'Impossible to delete a user without password.'
             raise InvalidAuthor(msg)
+        [napp.delete() for napp in self.get_all_napps()]
         if db_con.delete(self.redis_key) == 0 or \
            db_con.srem('users', self.redis_key) == 0:
             return False
