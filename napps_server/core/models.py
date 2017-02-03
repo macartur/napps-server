@@ -462,30 +462,25 @@ class Napp(object):
     """Class to manage Napp models."""
 
     schema = {
+        "author": {"type": "string"},
         "name": {"type": "string"},
         "description": {"type": "string"},
         "long_description": {"type": "string"},
         "version": {"type": "string"},
-        "author": {"type": "string"},
+        "napp_dependencies": {
+            "type": "array",
+            "items": {"type": "string"},
+            "minItems": 0,
+            "uniqueItems": True},
         "license": {"type": "string"},
-        "git": {"type": "string"},
-        "branch": {"type": "string"},
+        "url": {"type": "string"},
         "readme": {"type": "string"},  # To be read from README.rst
-        "ofversion": {"type": "array",
-                      "items": {"type": "string"},
-                      "minItems": 1,
-                      "uniqueItems": True},
         "tags": {"type": "array",
                  "items": {"type": "string"},
                  "minItems": 1,
                  "uniqueItems": True},
-        "dependencies": {"type": "array",
-                         "items": {"type": "string"},
-                         "minItems": 0,
-                         "uniqueItems": True},
-        "user": {"type": "string"},  # Not to be read from json.
-        "required": ["name", "description", "version", "author", "license",
-                     "git", "branch", "ofversion", "tags", "dependencies"]
+        "user": {"type": "string"},  # Not to be retrieved from json.
+        "required": ["author", "name", "description", "napp_dependencies"]
     }
 
     def __init__(self, content, user=None):
@@ -512,35 +507,6 @@ class Napp(object):
         return "napp:{}/{}".format(self.author, self.name)
 
     @property
-    def _url_for_raw_file_from_git(self):
-        """Method used to return a url for raw file from git.
-
-        Returns:
-            url (string): A URL from git.
-        """
-        url = re.sub(r'.git/?$', '/', self.git)
-        url += "raw/" + self.branch + "/" + self.author + "/"
-        url += self.name + "/"
-        return url
-
-    @property
-    def _json_from_git(self):
-        """Method used to get a json from raw file from git.
-
-        Returns:
-            json (string): JSON with Napp attributes.
-        """
-        url = self._url_for_raw_file_from_git + 'kytos.json'
-        try:
-            buffer = urlopen(url)
-            metadata = str(buffer.read(), encoding="utf-8")
-            attributes = json.loads(metadata)
-            return attributes
-        except:
-            msg = 'The repository {} could not be reached'
-            raise RepositoryNotReachable(msg, url)
-
-    @property
     def readme_rst(self):
         """Method used to return a readme string from this Napp instance.
 
@@ -561,16 +527,6 @@ class Napp(object):
         """
         parts = core.publish_parts(source=self.readme_rst, writer_name='html')
         return parts['body_pre_docinfo'] + parts['fragment']
-
-    def update_readme_from_git(self):
-        """Method used to update readme based on git."""
-        url = self._url_for_raw_file_from_git + 'README.rst'
-        try:
-            buffer = urlopen(url)
-            self.readme = str(buffer.read(), encoding="utf-8")
-        except:
-            msg = "Repository {} could not be reached."
-            raise RepositoryNotReachable(msg, url)
 
     @classmethod
     def all(cls):
@@ -603,10 +559,7 @@ class Napp(object):
                 setattr(self, key, attributes.get(key))
 
         if not self.readme:
-            try:
-                self.update_readme_from_git()
-            except RepositoryNotReachable:
-                pass
+            self.readme = self.description
 
     @classmethod
     def new_napp_from_dict(cls, attributes, user):
@@ -639,10 +592,6 @@ class Napp(object):
         else:
             self._populate_from_dict(attributes)
             self.save()
-
-    def update_from_git(self):
-        """Update the Napp attributes from git."""
-        self.update_from_dict(self._json_from_git)
 
     def as_dict(self):
         """Method used to create a dict based on Napp instance.
