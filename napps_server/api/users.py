@@ -117,7 +117,7 @@ def confirm_user(username, token):
     return '', 200
 
 
-@api.route("/users/<username>/", methods=['DELETE'])
+# @api.route("/users/<username>/", methods=['DELETE'])
 def delete_user(username):
     """Method used to create a endpoint to delete a user.
 
