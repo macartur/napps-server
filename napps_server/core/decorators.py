@@ -66,6 +66,8 @@ def requires_token(f):
             return Response("Permission denied", 401)
         except KeyError:
             return Response("Invalid request", 400)
+        except TypeError:
+            return Response("Invalid request", 400)
 
         if not token.is_valid():
             return Response("Permission denied", 401)

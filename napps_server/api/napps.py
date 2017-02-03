@@ -32,8 +32,9 @@ def get_napps():
     return jsonify({'napps': napps}), 200
 
 
+@api.route('/napps/<author>/', methods=['GET'])
 @api.route('/napps/<author>/<name>/', methods=['GET'])
-def get_napp(author, name):
+def get_napp(author, name=''):
     """Method used to show a detailed napp information.
 
     This method creates the '/napps/<author>/<name>' endpoint that shows a
@@ -52,8 +53,13 @@ def get_napp(author, name):
             'error': 'Author {} not found'.format(author)
         }), 404
 
-    napp = user.get_napp_by_name(name)
-    if napp is None:
+    if not name:
+        napps = [napp.as_dict() for napp in user.get_all_napps()]
+        return jsonify(napps), 200
+
+    try:
+        napp = user.get_napp_by_name(name)
+    except NappsEntryDoesNotExists:
         return jsonify({
             'error': 'NApp {} not found for the author {}'.format(name, author)
         }), 404
@@ -85,3 +91,46 @@ def register_napp(user):
         return Response("Permission denied. Invalid metadata.", 401)
 
     return Response("Napp created succesfully", 201)
+
+
+@api.route('/napps/<author>/<name>/', methods=['DELETE'])
+def delete_napp(author, name):
+    """Method used to show a detailed napp information.
+
+    This method creates the '/napps/<author>/<name>' endpoint that shows a
+    detailed napp information as a json format.
+
+    Parameters:
+        author (string): Author name.
+        name (string): Napp name.
+    Returns
+        json (string): String with all information in JSON format.
+    """
+    content = request.get_json()
+    token = content.get('token', None)
+
+    try:
+        user = User.get(author)
+    except NappsEntryDoesNotExists:
+        return jsonify({
+            'error': 'Author {} not found'.format(author)
+        }), 404
+
+    try:
+        napp = user.get_napp_by_name(name)
+    except NappsEntryDoesNotExists:
+        msg = 'NApp {} not found for the author {}'.format(name, author)
+        return jsonify({'error': msg}), 404
+
+    if token != user.token.hash:
+        msg = 'Napp can\'t be deleted by the author {} '.format(name, author)
+        return jsonify({'error': msg}), 404
+
+    try:
+        napp.delete()
+    except NappsEntryDoesNotExists:
+        msg = 'Napp {} can\'t be deleted.'.format(name)
+        return  jsonify({'error': msg }), 404
+
+    msg = 'Napp {} was deleted.'
+    return jsonify({'success': msg}), 200

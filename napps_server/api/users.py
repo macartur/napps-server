@@ -4,7 +4,8 @@
 # Third-party imports
 from flask import Blueprint, jsonify, request
 
-from napps_server.core.decorators import validate_json, validate_schema
+from napps_server.core.decorators import (requires_token, validate_json,
+                                          validate_schema)
 from napps_server.core.exceptions import NappsEntryDoesNotExists
 # Local source tree imports
 from napps_server.core.models import User
@@ -34,7 +35,7 @@ def register_user():
         user = User(username=content.get('username', ''),
                     email=content.get('email', ''),
                     first_name=content.get('first_name', ''),
-                    last_name=content('last_name', ''),
+                    last_name=content.get('last_name', ''),
                     phone=content.get('phone', None),
                     city=content.get('city', None),
                     state=content.get('state', None),
@@ -114,3 +115,26 @@ def confirm_user(username, token):
     user.token.invalidate()
     user.send_welcome()
     return '', 200
+
+
+# @api.route("/users/<username>/", methods=['DELETE'])
+def delete_user(username):
+    """Method used to create a endpoint to delete a user.
+
+    The endpoint created is /users/<username>/
+    """
+    content = request.get_json()
+    token = content.get('token', None)
+
+    try:
+        user = User.get(username)
+    except NappsEntryDoesNotExists:
+        return jsonify({"error": "User not found."}), 404
+
+    if token != user.token.hash:
+        msg = "The user {} can't be deleted using the token {}."
+        return jsonify({"error": msg.format(user.username, token)}), 404
+
+    user.delete()
+    msg = 'The user {} was deleted.'.format(username)
+    return jsonify({'success': msg})

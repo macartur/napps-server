@@ -1,0 +1,36 @@
+{% extends 'base.phtml' %}
+
+{% block main %}
+<table class="main">
+  <tr>
+    <td class="wrapper">
+      <table border="0" cellpadding="0" cellspacing="0">
+        <tr>
+          <td>
+              <div id='notice' class="invisible">
+                <strong>Invisible</strong> <div class='message'>Invisible message</div>
+                <span class="closebtn" onclick="this.parentElement.style.display='none';">&times;</span>
+              </div>
+              <center>User Registration</center>
+
+              <form id='user_form'>
+                  {% for field in context['fields'] %}
+                    <label>
+                    {{field[0].title().replace('_', ' ') }}
+                    {% if field[0] in context['fields_required'] %}
+                     * <input type='{{field[1]}}' name={{field[0]}} placeholdere='{{field[0]}}' required>
+                    {% else %}
+                      <input type='{{field[1]}}' name={{field[0]}} placeholdere='{{field[0]}}'>
+                    {% endif %}
+                    </label>
+                  {% endfor %}
+                  <input type='reset' value='reset'>
+                  <input type='submit' value='send'>
+              </form>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+{% endblock %}
