@@ -1,8 +1,12 @@
 """Module used to make avaliable napps routes."""
 # System imports
+import os
+import re
+from time import strftime
 
 # Third-party imports
 from flask import Blueprint, Response, jsonify, request
+from werkzeug import secure_filename
 
 from napps_server.core.decorators import requires_token, validate_json
 from napps_server.core.exceptions import (InvalidAuthor, InvalidNappMetaData,
@@ -12,6 +16,33 @@ from napps_server.core.models import Napp, User
 
 # Flask Blueprints
 api = Blueprint('napp_api', __name__)
+
+app.config['NAPP_REPO'] = '/var/www/kytos/napps/repo'
+app.config['ALLOWED_EXTENSIONS'] = set(['.napp'])
+
+
+def _allowed_file(filename):
+    """Check if the filename matches one of the required extensions."""
+    return '.' in filename and \
+        filename.rsplit('.', 1)[1] in app.config['ALLOWED_EXTENSIONS']
+
+
+def _curr_date():
+    """Return current date on the format YYYMMDDD."""
+    return strftime("%Y%m%d")
+
+
+def _napp_versioned_name(author, napp_name):
+    """Build the napp filename with a timestamp and a counter."""
+    author_repo = os.path.join(app.config.get('NAPP_REPO'), author)
+    basename = napp_name + _curr_date() + '-'
+    regexp = re.compile(r'' + basename + '(\d+)' + '.napp')
+    counter = 0
+    for file in os.listdir(author_repo):
+        matched = regexp.match(file)
+        if matched and matched.group(1) > counter:
+            counter = matched.group(1)
+    return basename + counter + '.napp'
 
 
 @api.route('/napps/', methods=['GET'])
@@ -80,8 +111,14 @@ def register_napp(user):
     case of failure.
     """
     content = request.get_json()
+
+    # Get the name of the uploaded file
+    file = request.files['file']
+
     if not user.enabled or not content['author'] == user.username:
         return Response("Permission denied", 401)
+    elif not file or not _allowed_file(file.filename):
+        return Response("Invalid file/file extension.")
 
     try:
         Napp.new_napp_from_dict(content, user)
@@ -90,7 +127,24 @@ def register_napp(user):
     except InvalidNappMetaData:
         return Response("Permission denied. Invalid metadata.", 401)
 
-    return Response("Napp created succesfully", 201)
+    author_repo = os.path.join(app.config['NAPP_REPO'], content['author'])
+    napp_latest = content['name'] + '-latest.napp'
+    napp_filename = _napp_versioned_name(content['author'], content['name'])
+    # Move the file form the temporal folder to
+    # the upload folder we setup
+    file.save(os.path.join(author_repo, napp_filename))
+
+    # Updating the 'latest' version, symbolic linking it to the uploaded file.
+
+    try:
+        os.remove(os.path.join(author_repo, napp_latest))
+    except FileNotFoundError:
+        pass
+
+    os.symlink(os.path.join(author_repo, napp_filename),
+               os.path.join(author_repo, napp_latest))
+
+    return Response("Napp succesfully created", 201)
 
 
 @api.route('/napps/<author>/<name>/', methods=['DELETE'])
