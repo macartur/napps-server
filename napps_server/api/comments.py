@@ -8,7 +8,7 @@ from flask import Blueprint, jsonify
 # Local source tree imports
 from napps_server import config
 
-con = config.CON
+db_con = config.DB_CON
 
 # Flask Blueprints
 api = Blueprint('comments_api', __name__)
@@ -27,7 +27,7 @@ def get_redis_list(name, key):
     Returns:
         redis_list (list): list with all members of a given name and key.
     """
-    return list(con.smembers(con.hget(name, key)))
+    return list(db_con.smembers(db_con.hget(name, key)))
 
 
 def get_comment(comment_key):
@@ -38,7 +38,7 @@ def get_comment(comment_key):
     Returns:
         json (string): JSON with structured data of the comment.
     """
-    return con.hgetall(comment_key)
+    return db_con.hgetall(comment_key)
 
 
 def get_author(author_key):
@@ -51,7 +51,7 @@ def get_author(author_key):
     """
     exclude = ['apps', 'city', 'comments', 'country', 'pass', 'phone', 'role',
                'state', 'status', 'timezone', 'tokens']
-    author_dict = con.hgetall(author_key)
+    author_dict = db_con.hgetall(author_key)
 
     for item in exclude:
         author_dict.pop(item, None)
@@ -72,7 +72,7 @@ def get_author_comments(name):
         json (string): Structured JSON with a list of comments.
     """
     user_key = "author:" + name
-    if con.sismember("authors", user_key):
+    if db_con.sismember("authors", user_key):
         return get_all_comments(user_key)
 
 
@@ -89,7 +89,7 @@ def get_napps_comments(name):
         json (string): Structured JSON with all comments.
     """
     app_key = "app:" + name
-    if con.sismember("apps", app_key):
+    if db_con.sismember("apps", app_key):
         return get_all_comments(app_key)
 
 

@@ -17,14 +17,14 @@ from napps_server.core.models import Napp, User
 # Flask Blueprints
 api = Blueprint('napp_api', __name__)
 
-app.config['NAPP_REPO'] = '/var/www/kytos/napps/repo'
-app.config['ALLOWED_EXTENSIONS'] = set(['.napp'])
+NAPP_REPO = '/var/www/kytos/napps/repo'
+ALLOWED_EXTENSIONS = set(['.napp'])
 
 
 def _allowed_file(filename):
     """Check if the filename matches one of the required extensions."""
     return '.' in filename and \
-        filename.rsplit('.', 1)[1] in app.config['ALLOWED_EXTENSIONS']
+        filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
 
 
 def _curr_date():
@@ -34,7 +34,7 @@ def _curr_date():
 
 def _napp_versioned_name(author, napp_name):
     """Build the napp filename with a timestamp and a counter."""
-    author_repo = os.path.join(app.config.get('NAPP_REPO'), author)
+    author_repo = os.path.join(NAPP_REPO, author)
     basename = napp_name + _curr_date() + '-'
     regexp = re.compile(r'' + basename + '(\d+)' + '.napp')
     counter = 0
@@ -127,7 +127,7 @@ def register_napp(user):
     except InvalidNappMetaData:
         return Response("Permission denied. Invalid metadata.", 401)
 
-    author_repo = os.path.join(app.config['NAPP_REPO'], content['author'])
+    author_repo = os.path.join(NAPP_REPO, content['author'])
     napp_latest = content['name'] + '-latest.napp'
     napp_filename = _napp_versioned_name(content['author'], content['name'])
     # Move the file form the temporal folder to
