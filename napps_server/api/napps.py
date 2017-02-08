@@ -6,7 +6,6 @@ from time import strftime
 
 # Third-party imports
 from flask import Blueprint, Response, jsonify, request
-from werkzeug import secure_filename
 
 from napps_server.core.decorators import requires_token, validate_json
 from napps_server.core.exceptions import (InvalidAuthor, InvalidNappMetaData,
@@ -18,7 +17,7 @@ from napps_server.core.models import Napp, User
 api = Blueprint('napp_api', __name__)
 
 NAPP_REPO = '/var/www/kytos/napps/repo'
-ALLOWED_EXTENSIONS = set(['.napp'])
+ALLOWED_EXTENSIONS = set(['napp'])
 
 
 def _allowed_file(filename):
@@ -35,14 +34,37 @@ def _curr_date():
 def _napp_versioned_name(author, napp_name):
     """Build the napp filename with a timestamp and a counter."""
     author_repo = os.path.join(NAPP_REPO, author)
-    basename = napp_name + _curr_date() + '-'
+    basename = napp_name + '-' + _curr_date() + '-'
     regexp = re.compile(r'' + basename + '(\d+)' + '.napp')
     counter = 0
     for file in os.listdir(author_repo):
         matched = regexp.match(file)
-        if matched and matched.group(1) > counter:
-            counter = matched.group(1)
-    return basename + counter + '.napp'
+        if matched and int(matched.group(1)) > counter:
+            counter = int(matched.group(1))
+    return basename + str(counter + 1) + '.napp'
+
+
+def _from_ImmutableMultiDict_to_dict(immd):
+    """Method that converts an ImmutableMultiDict to a dict.
+
+    This convertion consider the expected type of each attribute, based on the
+    Napp.schema reference.
+    """
+    output = dict()
+    for key in Napp.schema:
+        if key != 'required' and key != 'user':
+            # This ia a validation for required items...
+            # But it can be improved
+            if key in Napp.schema['required'] and key not in immd:
+                raise InvalidNappMetaData('Missing key {}'.format(key))
+
+            # Converting to list
+            if Napp.schema[key]['type'] == 'array':
+                output[key] = immd.getlist(key)
+            else:
+                output[key] = immd[key]
+
+    return output
 
 
 @api.route('/napps/', methods=['GET'])
@@ -110,15 +132,17 @@ def register_napp(user):
     :return: Return HTTP code 201 if napp were succesfully created and 4XX in
     case of failure.
     """
-    content = request.get_json()
+    #: As we expect here a multipart/form POST, then the 'data' may come on the
+    #: form attribute of the request, instead of the json attribute.
+    content = _from_ImmutableMultiDict_to_dict(request.form)
 
     # Get the name of the uploaded file
-    file = request.files['file']
+    sent_file = request.files['file']
 
     if not user.enabled or not content['author'] == user.username:
         return Response("Permission denied", 401)
-    elif not file or not _allowed_file(file.filename):
-        return Response("Invalid file/file extension.")
+    elif not sent_file or not _allowed_file(sent_file.filename):
+        return Response("Invalid file/file extension.", 401)
 
     try:
         Napp.new_napp_from_dict(content, user)
@@ -128,19 +152,18 @@ def register_napp(user):
         return Response("Permission denied. Invalid metadata.", 401)
 
     author_repo = os.path.join(NAPP_REPO, content['author'])
+    os.makedirs(author_repo, exist_ok=True)
     napp_latest = content['name'] + '-latest.napp'
     napp_filename = _napp_versioned_name(content['author'], content['name'])
     # Move the file form the temporal folder to
     # the upload folder we setup
-    file.save(os.path.join(author_repo, napp_filename))
+    sent_file.save(os.path.join(author_repo, napp_filename))
 
     # Updating the 'latest' version, symbolic linking it to the uploaded file.
-
     try:
         os.remove(os.path.join(author_repo, napp_latest))
     except FileNotFoundError:
         pass
-
     os.symlink(os.path.join(author_repo, napp_filename),
                os.path.join(author_repo, napp_latest))
 
