@@ -480,7 +480,7 @@ class Napp(object):
                  "minItems": 1,
                  "uniqueItems": True},
         "user": {"type": "string"},  # Not to be retrieved from json.
-        "required": ["author", "name", "description", "napp_dependencies"]
+        "required": ["author", "name", "description"]
     }
 
     def __init__(self, content, user=None):
