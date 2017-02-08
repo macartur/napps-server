@@ -13,7 +13,12 @@ def validate_json(f):
     @wraps(f)
     def wrapper(*args, **kwargs):
         """Wrapper called to validate a json from request."""
-        if request.get_json() is None:
+        if 'multipart/form-data' in request.headers['Content-Type']:
+            content = request.form
+        else:
+            content = request.json()
+
+        if content is None:
             return jsonify({'error': "Payload must be a valid json"}), 400
         return f(*args, **kwargs)
     return wrapper
@@ -26,8 +31,13 @@ def validate_schema(schema):
         @wraps(f)
         def wrapper(*args, **kwargs):
             """Wrapper to validate the schema."""
+            if 'multipart/form-data' in request.headers['Content-Type']:
+                content = request.form
+            else:
+                content = request.json()
+
             try:
-                validate(request.get_json(), schema)
+                validate(content, schema)
             except ValidationError as e:
                 return Response(e.message, 400)
             return f(*args, **kwargs)
@@ -59,7 +69,11 @@ def requires_token(f):
     @wraps(f)
     def wrapper(*args, **kwargs):
         """Wrapper used to verify the requires of token."""
-        content = request.get_json()
+        if 'multipart/form-data' in request.headers['Content-Type']:
+            content = request.form
+        else:
+            content = request.json()
+
         try:
             token = Token.get(content['token'])
         except NappsEntryDoesNotExists:
