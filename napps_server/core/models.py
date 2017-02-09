@@ -276,12 +276,16 @@ class User(object):
         message['To'] = self.email
         part1 = MIMEText(template, 'html')
         message.attach(part1)
-        smtp = smtplib.SMTP('localhost')
         try:
+            smtp = smtplib.SMTP('localhost')
             smtp.sendmail('no-reply@kytos.io', self.email, message.as_string())
             smtp.quit()
         except smtplib.SMTPRecipientsRefused:
-            print('Error trying to send smtp message')
+            return '', 500
+        except ConnectionRefusedError:
+            msg = 'Ops, some error occurred while trying to send an email to '
+            msg += '{}, please contact the admin team at contact@kytos.io.'
+            return msg.format(self.email), 500
 
     def send_token(self):
         """Method used to send a message with a valid token to a user."""
