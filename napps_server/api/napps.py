@@ -5,13 +5,15 @@ import re
 from time import strftime
 
 # Third-party imports
+
+# Local source tree imports
 from flask import Blueprint, Response, jsonify, request
 
 from napps_server.core.decorators import requires_token, validate_json
 from napps_server.core.exceptions import (InvalidAuthor, InvalidNappMetaData,
                                           NappsEntryDoesNotExists)
-# Local source tree imports
 from napps_server.core.models import Napp, User
+from napps_server.core.utils import immutableMultiDict_to_dict
 
 # Flask Blueprints
 api = Blueprint('napp_api', __name__)
@@ -42,29 +44,6 @@ def _napp_versioned_name(author, napp_name):
         if matched and int(matched.group(1)) > counter:
             counter = int(matched.group(1))
     return basename + str(counter + 1) + '.napp'
-
-
-def _from_ImmutableMultiDict_to_dict(immd):
-    """Method that converts an ImmutableMultiDict to a dict.
-
-    This convertion consider the expected type of each attribute, based on the
-    Napp.schema reference.
-    """
-    output = dict()
-    for key in Napp.schema:
-        if key != 'required' and key != 'user':
-            # This ia a validation for required items...
-            # But it can be improved
-            if key in Napp.schema['required'] and key not in immd:
-                raise InvalidNappMetaData('Missing key {}'.format(key))
-
-            # Converting to list
-            if Napp.schema[key]['type'] == 'array':
-                output[key] = immd.getlist(key)
-            else:
-                output[key] = immd[key]
-
-    return output
 
 
 @api.route('/napps/', methods=['GET'])
@@ -134,7 +113,7 @@ def register_napp(user):
     """
     #: As we expect here a multipart/form POST, then the 'data' may come on the
     #: form attribute of the request, instead of the json attribute.
-    content = _from_ImmutableMultiDict_to_dict(request.form)
+    content = immutableMultiDict_to_dict(Napp.schema, request.form)
 
     # Get the name of the uploaded file
     sent_file = request.files['file']
@@ -184,6 +163,11 @@ def delete_napp(author, name):
         json (string): String with all information in JSON format.
     """
     content = request.get_json()
+    if content is None:
+        content = request.get_data()
+        if content is None:
+            content = immutableMultiDict_to_dict(Napp.schema, request.form)
+
     token = content.get('token', None)
 
     try:

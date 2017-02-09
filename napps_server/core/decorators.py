@@ -6,6 +6,7 @@ from jsonschema import ValidationError, validate
 
 from napps_server.core.exceptions import NappsEntryDoesNotExists
 from napps_server.core.models import Token, User
+from napps_server.core.utils import immutableMultiDict_to_dict
 
 
 def validate_json(f):
@@ -13,12 +14,8 @@ def validate_json(f):
     @wraps(f)
     def wrapper(*args, **kwargs):
         """Wrapper called to validate a json from request."""
-        if 'multipart/form-data' in request.headers['Content-Type']:
-            content = request.form
-        else:
-            content = request.json()
-
-        if content is None:
+        if request.form is None and request.get_json() is None and \
+                request.get_data() is None:
             return jsonify({'error': "Payload must be a valid json"}), 400
         return f(*args, **kwargs)
     return wrapper
@@ -31,10 +28,12 @@ def validate_schema(schema):
         @wraps(f)
         def wrapper(*args, **kwargs):
             """Wrapper to validate the schema."""
-            if 'multipart/form-data' in request.headers['Content-Type']:
-                content = request.form
-            else:
-                content = request.json()
+            content = request.get_json()
+            if content is None:
+                content = request.get_data()
+                if content is None:
+                    content = immutableMultiDict_to_dict(schema,
+                                                         request.form)
 
             try:
                 validate(content, schema)
@@ -69,13 +68,14 @@ def requires_token(f):
     @wraps(f)
     def wrapper(*args, **kwargs):
         """Wrapper used to verify the requires of token."""
-        if 'multipart/form-data' in request.headers['Content-Type']:
-            content = request.form
-        else:
-            content = request.json()
+        content = request.get_json()
+        if content is None:
+            content = request.get_data()
+            if content is None:
+                content = request.form
 
         try:
-            token = Token.get(content['token'])
+            token = Token.get(content.get('token'))
         except NappsEntryDoesNotExists:
             return Response("Permission denied", 401)
         except KeyError:

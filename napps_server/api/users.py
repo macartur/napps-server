@@ -2,13 +2,15 @@
 # System imports
 
 # Third-party imports
+
+# Local source tree imports
 from flask import Blueprint, jsonify, request
 
 from napps_server.core.decorators import (requires_token, validate_json,
                                           validate_schema)
 from napps_server.core.exceptions import NappsEntryDoesNotExists
-# Local source tree imports
 from napps_server.core.models import User
+from napps_server.core.utils import immutableMultiDict_to_dict
 
 # Flask Blueprints
 api = Blueprint('user_api', __name__)
@@ -28,6 +30,11 @@ def register_user():
         json (string): JSON with result of user registration.
     """
     content = request.get_json()
+    if content is None:
+        content = request.get_data()
+        if content is None:
+            content = immutableMultiDict_to_dict(User.schema, request.form)
+
     try:
         User.get(content['username'])
         return jsonify({"error": "Username already exists"}), 401
@@ -124,6 +131,11 @@ def delete_user(username):
     The endpoint created is /users/<username>/
     """
     content = request.get_json()
+    if content is None:
+        content = request.get_data()
+        if content is None:
+            content = immutableMultiDict_to_dict(User.schema, request.form)
+
     token = content.get('token', None)
 
     try:
