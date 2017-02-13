@@ -292,7 +292,7 @@ class User(object):
         if not self.token:
             return False
 
-        context = {'napps_server': napps_server_url,
+        context = {'napps_server_url': napps_server_url,
                    'username': self.username,
                    'token': self.token.hash}
 
