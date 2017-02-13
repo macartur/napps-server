@@ -21,7 +21,7 @@ from napps_server.core.exceptions import (InvalidAuthor, InvalidNappMetaData,
 from napps_server.core.utils import generate_hash, render_template
 
 db_con = config.DB_CON
-napps_server_url = config.NAPPS_SERVER_URL
+napps_api_url = config.NAPPS_API_URL
 
 
 class User(object):
@@ -292,7 +292,7 @@ class User(object):
         if not self.token:
             return False
 
-        context = {'napps_server_url': napps_server_url,
+        context = {'napps_api_url': napps_api_url,
                    'username': self.username,
                    'token': self.token.hash}
 
