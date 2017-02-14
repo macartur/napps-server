@@ -496,10 +496,9 @@ class Napp(object):
                 Associate a user that belongs this Napp.
         """
         self.user = User.get(content['author'])
+        self.readme = ""
         if content is not None:
             self._populate_from_dict(content)
-
-        self.readme = ""
 
     @property
     def redis_key(self):
