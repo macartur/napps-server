@@ -516,10 +516,7 @@ class Napp(object):
         Returns:
             readme (string): Text with details of this Napp.
         """
-        if self.readme:
-            return self.readme
-        else:
-            return self.long_description
+        return self.readme or self.long_description or self.description
 
     @property
     def readme_html(self):
@@ -561,8 +558,7 @@ class Napp(object):
 
                 setattr(self, key, attributes.get(key))
 
-        if not self.readme:
-            self.readme = self.description
+        self.readme = self.reamde or self.long_description or self.description
 
     @classmethod
     def new_napp_from_dict(cls, attributes, user):
