@@ -31,7 +31,7 @@ def immutableMultiDict_to_dict(schema, immd):
     given schema reference.
     """
     output = dict()
-    for key, value in schema:
+    for key, value in schema.items():
         if key != 'required' and key != 'user':
             if value.get('type') == 'array':
                 output[key] = immd.getlist(key)
