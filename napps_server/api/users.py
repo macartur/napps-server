@@ -121,7 +121,7 @@ def confirm_user(username, token):
     user.enable()
     user.token.invalidate()
     user.send_welcome()
-    return '', 200
+    return 'Congratulations, the user {} was enabled'.format(username), 200
 
 
 # @api.route("/users/<username>/", methods=['DELETE'])
