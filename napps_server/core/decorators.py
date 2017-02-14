@@ -70,12 +70,12 @@ def requires_token(f):
         """Wrapper used to verify the requires of token."""
         content = request.get_json()
         if content is None:
-            content = request.get_data()
-            if content is None:
-                content = request.form
+            token = request.form['token']
+        else:
+            token = content.get('token', None)
 
         try:
-            token = Token.get(content.get('token'))
+            token = Token.get(token)
         except NappsEntryDoesNotExists:
             return Response("Permission denied", 401)
         except KeyError:
