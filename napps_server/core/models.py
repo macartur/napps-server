@@ -558,7 +558,7 @@ class Napp(object):
 
                 setattr(self, key, attributes.get(key))
 
-        self.readme = self.reamde or self.long_description or self.description
+        self.readme = self.readme or self.long_description or self.description
 
     @classmethod
     def new_napp_from_dict(cls, attributes, user):
