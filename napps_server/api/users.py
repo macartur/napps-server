@@ -4,13 +4,13 @@
 # Third-party imports
 
 # Local source tree imports
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, Response
 
 from napps_server.core.decorators import (requires_token, validate_json,
                                           validate_schema)
 from napps_server.core.exceptions import NappsEntryDoesNotExists
 from napps_server.core.models import User
-from napps_server.core.utils import immutableMultiDict_to_dict
+from napps_server.core.utils import get_request_data
 
 # Flask Blueprints
 api = Blueprint('user_api', __name__)
@@ -29,15 +29,11 @@ def register_user():
     Returns:
         json (string): JSON with result of user registration.
     """
-    content = request.get_json()
-    if content is None:
-        content = request.get_data()
-        if content is None:
-            content = immutableMultiDict_to_dict(User.schema, request.form)
+    content = get_request_data(request, User.schema)
 
     try:
-        User.get(content['username'])
-        return jsonify({"error": "Username already exists"}), 401
+        User.get(content.get('username'))
+        return Response("error: Username already exists", 403)
     except NappsEntryDoesNotExists:
         user = User(username=content.get('username', ''),
                     email=content.get('email', ''),
@@ -52,7 +48,7 @@ def register_user():
         user.save()
         user.create_token()
         user.send_token()
-        return '', 201
+        return Response('User successfully created.', 201)
 
 
 @api.route('/users/', methods=['GET'])
@@ -95,9 +91,9 @@ def get_user(username):
 def confirm_user(username, token):
     """Method used to confirm the user and his token.
 
-    This method will get a username and a token and verify if these are valid.
+    This method will get a username and a token and verify if they are valid.
     If these are invalid must return the HTTP code 40X and a JSON with the
-    message error.Otherwise must return the HTTP code 200.
+    message error. Otherwise must return the HTTP code 200.
 
     Parameters:
         username (string):  Username of a author.
@@ -130,12 +126,7 @@ def delete_user(username):
 
     The endpoint created is /users/<username>/
     """
-    content = request.get_json()
-    if content is None:
-        content = request.get_data()
-        if content is None:
-            content = immutableMultiDict_to_dict(User.schema, request.form)
-
+    content = get_request_data(request, User.schema)
     token = content.get('token', None)
 
     try:

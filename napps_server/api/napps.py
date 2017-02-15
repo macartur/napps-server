@@ -13,7 +13,7 @@ from napps_server.core.decorators import requires_token, validate_json
 from napps_server.core.exceptions import (InvalidAuthor, InvalidNappMetaData,
                                           NappsEntryDoesNotExists)
 from napps_server.core.models import Napp, User
-from napps_server.core.utils import immutableMultiDict_to_dict
+from napps_server.core.utils import get_request_data
 
 # Flask Blueprints
 api = Blueprint('napp_api', __name__)
@@ -113,7 +113,7 @@ def register_napp(user):
     """
     #: As we expect here a multipart/form POST, then the 'data' may come on the
     #: form attribute of the request, instead of the json attribute.
-    content = immutableMultiDict_to_dict(Napp.schema, request.form)
+    content = get_request_data(request, Napp.schema)
 
     # Get the name of the uploaded file
     sent_file = request.files['file']
@@ -162,11 +162,7 @@ def delete_napp(author, name):
     Returns
         json (string): String with all information in JSON format.
     """
-    content = request.get_json()
-    if content is None:
-        content = request.get_data()
-        if content is None:
-            content = immutableMultiDict_to_dict(Napp.schema, request.form)
+    content = get_request_data(request, Napp.schema)
 
     token = content.get('token', None)
 
