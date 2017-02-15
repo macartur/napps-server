@@ -76,15 +76,12 @@ def requires_token(f):
 
         try:
             token = Token.get(token)
+            if not token or not token.is_valid():
+                raise NappsEntryDoesNotExists
         except NappsEntryDoesNotExists:
-            return Response("Permission denied", 401)
-        except KeyError:
+            return authenticate()
+        except (KeyError, TypeError):
             return Response("Invalid request", 400)
-        except TypeError:
-            return Response("Invalid request", 400)
-
-        if not token.is_valid():
-            return Response("Permission denied", 401)
 
         # Otherwise just send them where they wanted to go
         return f(token.user, *args, **kwargs)
