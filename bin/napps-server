@@ -25,9 +25,6 @@ app.register_blueprint(users.api)
 # Expose application endpoints
 app.register_blueprint(napps.api)
 
-# Expose graphic interface
-app.register_blueprint(user_ui.app)
-
 # Expose comments endpoints
 #common.app.register_blueprint(comments.api)
 
