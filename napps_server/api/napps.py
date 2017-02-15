@@ -149,7 +149,7 @@ def register_napp(user):
     return Response("Napp succesfully created", 201)
 
 
-@api.route('/napps/<author>/<name>/', methods=['DELETE'])
+# @api.route('/napps/<author>/<name>/', methods=['DELETE'])
 def delete_napp(author, name):
     """Method used to show a detailed napp information.
 
