@@ -43,3 +43,23 @@ def immutableMultiDict_to_dict(schema, immd):
             output[key] = immd.get(key)
 
     return output
+
+
+def get_request_data(request, schema):
+    """Extract the data from a request.
+
+    Check the json, data and form fields in order to get the request data.
+
+    Args:
+        request (flask.request): The request that should contain the data
+        schema (dict): A dict representing the schema from where the 'json'
+            will be structured.
+    Return:
+        content (dict): A dict ('json') with the data from the request
+        None if no data was found.
+    """
+    content = request.get_json()
+    if content is None:
+        content = immutableMultiDict_to_dict(schema, request.form)
+
+    return content
