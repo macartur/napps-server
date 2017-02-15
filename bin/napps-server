@@ -12,7 +12,6 @@ from napps_server.api import auth
 #from napps_server.api import common
 from napps_server.api import napps
 from napps_server.api import users
-from napps_server.ui import user_ui
 
 app = Flask(__name__)
 
