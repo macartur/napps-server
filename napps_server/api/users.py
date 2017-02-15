@@ -4,7 +4,7 @@
 # Third-party imports
 
 # Local source tree imports
-from flask import Blueprint, jsonify, request, Response
+from flask import Blueprint, jsonify, redirect, request, Response
 
 from napps_server.core.decorators import (requires_token, validate_json,
                                           validate_schema)
@@ -117,7 +117,9 @@ def confirm_user(username, token):
     user.enable()
     user.token.invalidate()
     user.send_welcome()
-    return 'Congratulations, the user {} was enabled'.format(username), 200
+
+    url = 'http://napps.kytos.io?activated'
+    return redirect(url, code=307)
 
 
 # @api.route("/users/<username>/", methods=['DELETE'])
