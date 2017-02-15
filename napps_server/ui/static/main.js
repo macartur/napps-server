@@ -21,7 +21,7 @@ function valid_password(){
    console.log(password)
    console.log(confirm_password)
    if(password != confirm_password){
-     set_message('alert', 'Warning !!', "The password and confirm password must be the same.")
+     set_message('alert', 'Warning', "The password and confirm password must be the same.")
      return false;
    }
    set_message('invisible', '', '')
@@ -30,11 +30,11 @@ function valid_password(){
 
 function handle_result(data){
   if(data.statusText == "CREATED"){
-      set_message('success', 'Success !!', 'The user has been created, verify the email confirmation.')
+      set_message('success', 'Success', 'The user has been created, verify the email confirmation.')
       $('#user_form input[type=reset]').click()
   }else if(data.statusText == "UNAUTHORIZED"){
     if(data.responseJSON.error){
-      set_message('error', 'Error !!', 'data.responseJSON.error')
+      set_message('error', 'Error', 'data.responseJSON.error')
     }
   }
 }

@@ -18,8 +18,7 @@ app = Blueprint('user_ui', __name__,
                 static_folder=STATIC_FOLDER,
                 static_url_path='/static/user_ui')
 
-
-@app.route("/users/new/", methods=["GET"])
+@app.route("/register/", methods=["GET"])
 def new_user():
     """Method used to registered a new endpoint to provide a user registration.
 
