@@ -2,10 +2,18 @@
 import hashlib
 import os
 
+from flask import Response
 from jinja2 import Template
 
 APP_ROOT = os.path.dirname(os.path.abspath(__file__))
 TEMPLATE_DIR = os.path.join(APP_ROOT, 'templates')
+
+
+def authenticate():
+    """Method used to send a 401 response that enables basic auth."""
+    return Response('Could not verify your access level for that URL.\n'
+                    'You have to login with proper credentials', 401,
+                    {'WWW-Authenticate': 'Basic realm="Login Required"'})
 
 
 def render_template(filename, context):

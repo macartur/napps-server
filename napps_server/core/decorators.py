@@ -6,7 +6,7 @@ from jsonschema import ValidationError, validate
 
 from napps_server.core.exceptions import NappsEntryDoesNotExists
 from napps_server.core.models import Token, User
-from napps_server.core.utils import immutableMultiDict_to_dict
+from napps_server.core.utils import authenticate, get_request_data
 
 
 def validate_json(f):
@@ -28,12 +28,7 @@ def validate_schema(schema):
         @wraps(f)
         def wrapper(*args, **kwargs):
             """Wrapper to validate the schema."""
-            content = request.get_json()
-            if content is None:
-                content = request.get_data()
-                if content is None:
-                    content = immutableMultiDict_to_dict(schema,
-                                                         request.form)
+            content = get_request_data(request, schema)
 
             try:
                 validate(content, schema)
@@ -42,13 +37,6 @@ def validate_schema(schema):
             return f(*args, **kwargs)
         return wrapper
     return decorator
-
-
-def authenticate():
-    """Method used to send a 401 response that enables basic auth."""
-    return Response('Could not verify your access level for that URL.\n'
-                    'You have to login with proper credentials', 401,
-                    {'WWW-Authenticate': 'Basic realm="Login Required"'})
 
 
 def requires_auth(f):
