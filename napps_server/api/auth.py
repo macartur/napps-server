@@ -6,9 +6,9 @@
 from flask import Blueprint, jsonify, request
 
 # Local source tree imports
-from napps_server.core.decorators import requires_auth
-from napps_server.core.exceptions import NappsEntryDoesNotExists
+from napps_server.core.decorators import requires_auth, requires_token
 from napps_server.core.models import User
+from napps_server.core.utils import authenticate
 
 # Flask Blueprints
 api = Blueprint('auth_api', __name__)
@@ -21,11 +21,23 @@ def napps_auth():
 
     :return: A token to the user
     """
-    try:
-        auth = request.authorization
-        user = User.get(auth.username)
-    except NappsEntryDoesNotExists:
-        return jsonify({'error': 'User not found'}), 404
-
+    auth = request.authorization
+    user = User.get(auth.username)
+    if not auth or not User.check_auth(auth.username, auth.password):
+        return authenticate()
     token = user.create_token()
     return jsonify(token.as_dict()), 201
+
+
+@api.route("/auth/verify/", methods=["POST"])
+@requires_token
+def check_token():
+    """Enpoint to check user authentication token.
+
+    If the token is a valid token and the token is from the given user, then
+    return 201, except return 401.
+    Returns:
+        201 if the token is still valid and is related to the user
+        401 otherwise.
+    """
+    return 'User authorization correctly verified', 201
