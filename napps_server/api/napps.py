@@ -180,7 +180,7 @@ def delete_napp(author, name):
         return jsonify({'error': msg}), 404
 
     if token != user.token.hash:
-        msg = 'Napp can\'t be deleted by the author {} '.format(name, author)
+        msg = 'Napp can\'t be deleted by the author {} '.format(author)
         return jsonify({'error': msg}), 404
 
     try:
