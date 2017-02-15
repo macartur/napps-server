@@ -102,24 +102,24 @@ def confirm_user(username, token):
         json (string): JSON with error message.
     """
     # Check if user exists
+    url = 'http://napps.kytos.io?{}'
+
     try:
         user = User.get(username)
     except NappsEntryDoesNotExists:
-        return jsonify({"error": "User not found"}), 404
+        return redirect(url.format("user_not_found"), code=307)
 
     if not user.token:
-        return jsonify({"error": "Invalid token"}), 400
+        return redirect(url.format('invalid_token'), code=307)
 
     # Check if token belongs to user and is a valid token
     if (user.token.hash != token) or (not user.token.is_valid()):
-        return jsonify({"error": "Invalid token"}), 400
+        return redirect(url.format('invalid_token'), code=307)
 
     user.enable()
     user.token.invalidate()
     user.send_welcome()
-
-    url = 'http://napps.kytos.io?activated'
-    return redirect(url, code=307)
+    return redirect(url.format('activated'), code=307)
 
 
 # @api.route("/users/<username>/", methods=['DELETE'])
