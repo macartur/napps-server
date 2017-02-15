@@ -37,8 +37,7 @@ class User(object):
         "city": {"type": "string"},
         "state": {"type": "string"},
         "country": {"type": "string"},
-        "required": ["username", "first_name", "last_name",
-                     "password", "email"]
+        "required": ["username", "first_name", "password", "email"]
     }
 
     def __init__(self, username, email, first_name, last_name,
