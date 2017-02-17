@@ -296,7 +296,7 @@ class User(object):
                    'token': self.token.hash}
 
         html = render_template('confirm_user.phtml', context)
-        self.send_email(html, 'Kytos Napps Repository: Confirm your account')
+        self.send_email(html, 'Kytos NApps Repository: Confirm your account')
 
     def send_welcome(self):
         """Method used to send a welcome message to a user."""
@@ -305,7 +305,7 @@ class User(object):
 
         context = {'username': self.username}
         html = render_template('welcome.phtml', context)
-        self.send_email(html, 'Welcome to Kytos Napps Respository')
+        self.send_email(html, 'Welcome to Kytos NApps Repository')
 
     def get_all_napps(self):
         """Method used to return a list of napps.
