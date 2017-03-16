@@ -14,7 +14,7 @@ from napps_server.core.utils import authenticate
 api = Blueprint('auth_api', __name__)
 
 
-@api.route("/auth/", methods=["POST"])
+@api.route("/auth/", methods=["GET"])
 @requires_auth
 def napps_auth():
     """Endpoint to perform the authentication.
