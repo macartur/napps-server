@@ -56,7 +56,7 @@ def get_users():
     """Method used to show all applications developers.
 
     This method will creates '/users/' endpoint that shows all application
-    authors with their informations.
+    author usernames with their informations.
 
     Returns:
         json (string): JSON with detailed users.
@@ -69,13 +69,13 @@ def get_users():
 def get_user(username):
     """Method used to show details about a specific user.
 
-    This method creates '/users/<username>' endpoint that shows details
-    about a specific application author. If the username can't be found by
-    system will return HTTP code 404 and a error message. Otherwise will return
-    the HTTP code 200 and render a json with user informations.
+    This method creates '/users/<username>/' endpoint that shows details
+    about a specific application author. If the username can't be found
+    by system will return HTTP code 404 and a error message. Otherwise will
+    return the HTTP code 200 and render a json with user informations.
 
     Parameters:
-        username (string): Username of a author.
+        username (string): Name of a user.
     Returns:
         json (string): JSON with all information about a specific author.
     """
@@ -96,7 +96,7 @@ def confirm_user(username, token):
     message error. Otherwise must return the HTTP code 200.
 
     Parameters:
-        username (string):  Username of a author.
+        username (string):  Name of a user.
         token (string): valid token.
     Returns:
         json (string): JSON with error message.
@@ -134,7 +134,8 @@ def delete_user(username):
     try:
         user = User.get(username)
     except NappsEntryDoesNotExists:
-        return jsonify({"error": "User not found."}), 404
+        error_msg = "User {} not found.".format(username)
+        return jsonify({"error": error_msg}), 404
 
     if token != user.token.hash:
         msg = "The user {} can't be deleted using the token {}."
