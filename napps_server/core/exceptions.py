@@ -19,8 +19,8 @@ class InvalidNappMetaData(Exception):
     pass
 
 
-class InvalidAuthor(Exception):
-    """Exception thrown when a invalid author is found."""
+class InvalidUser(Exception):
+    """Exception thrown when a invalid user is found."""
 
     pass
 

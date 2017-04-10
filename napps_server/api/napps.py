@@ -10,7 +10,7 @@ from time import strftime
 from flask import Blueprint, Response, jsonify, request
 
 from napps_server.core.decorators import requires_token, validate_json
-from napps_server.core.exceptions import (InvalidAuthor, InvalidNappMetaData,
+from napps_server.core.exceptions import (InvalidUser, InvalidNappMetaData,
                                           NappsEntryDoesNotExists)
 from napps_server.core.models import Napp, User
 from napps_server.core.utils import get_request_data
@@ -33,13 +33,13 @@ def _curr_date():
     return strftime("%Y%m%d")
 
 
-def _napp_versioned_name(author, napp_name):
+def _napp_versioned_name(username, napp_name):
     """Build the napp filename with a timestamp and a counter."""
-    author_repo = os.path.join(NAPP_REPO, author)
+    user_repo = os.path.join(NAPP_REPO, username)
     basename = napp_name + '-' + _curr_date() + '-'
     regexp = re.compile(r'' + basename + '(\d+)' + '.napp')
     counter = 0
-    for file in os.listdir(author_repo):
+    for file in os.listdir(user_repo):
         matched = regexp.match(file)
         if matched and int(matched.group(1)) > counter:
             counter = int(matched.group(1))
@@ -64,25 +64,25 @@ def get_napps():
     return jsonify({'napps': napps}), 200
 
 
-@api.route('/napps/<author>/', methods=['GET'])
-@api.route('/napps/<author>/<name>/', methods=['GET'])
-def get_napp(author, name=''):
+@api.route('/napps/<username>/', methods=['GET'])
+@api.route('/napps/<username>/<name>/', methods=['GET'])
+def get_napp(username, name=''):
     """Method used to show a detailed napp information.
 
-    This method creates the '/napps/<author>/<name>' endpoint that shows a
-    detailed napp information as a json format.
+    This method creates the '/napps/<username>/<name>' endpoint that shows
+    a detailed napp information as a json format.
 
     Parameters:
-        author (string): Author name.
+        username (string): Name of a user.
         name (string): Napp name.
     Returns
         json (string): String with all information in JSON format.
     """
     try:
-        user = User.get(author)
+        user = User.get(username)
     except NappsEntryDoesNotExists:
         return jsonify({
-            'error': 'Author {} not found'.format(author)
+            'error': 'Username {} not found'.format(username)
         }), 404
 
     if not name:
@@ -93,7 +93,8 @@ def get_napp(author, name=''):
         napp = user.get_napp_by_name(name)
     except NappsEntryDoesNotExists:
         return jsonify({
-            'error': 'NApp {} not found for the author {}'.format(name, author)
+            'error': 'NApp {} not found for the username {}'.format(name,
+                                                                    username)
         }), 404
 
     return jsonify(napp.as_dict()), 200
@@ -118,46 +119,46 @@ def register_napp(user):
     # Get the name of the uploaded file
     sent_file = request.files['file']
 
-    if not user.enabled or not content['author'] == user.username:
+    if not user.enabled or not content['username'] == user.username:
         return Response("Permission denied", 401)
     elif not sent_file or not _allowed_file(sent_file.filename):
         return Response("Invalid file/file extension.", 401)
 
     try:
         Napp.new_napp_from_dict(content, user)
-    except InvalidAuthor:
-        return Response("Permission denied. Invalid Author.", 401)
+    except InvalidUser:
+        return Response("Permission denied. Invalid username.", 401)
     except InvalidNappMetaData:
         return Response("Permission denied. Invalid metadata.", 401)
 
-    author_repo = os.path.join(NAPP_REPO, content['author'])
-    os.makedirs(author_repo, exist_ok=True)
+    user_repo = os.path.join(NAPP_REPO, content['username'])
+    os.makedirs(user_repo, exist_ok=True)
     napp_latest = content['name'] + '-latest.napp'
-    napp_filename = _napp_versioned_name(content['author'], content['name'])
+    napp_filename = _napp_versioned_name(content['username'], content['name'])
     # Move the file form the temporal folder to
     # the upload folder we setup
-    sent_file.save(os.path.join(author_repo, napp_filename))
+    sent_file.save(os.path.join(user_repo, napp_filename))
 
     # Updating the 'latest' version, symbolic linking it to the uploaded file.
     try:
-        os.remove(os.path.join(author_repo, napp_latest))
+        os.remove(os.path.join(user_repo, napp_latest))
     except FileNotFoundError:
         pass
-    os.symlink(os.path.join(author_repo, napp_filename),
-               os.path.join(author_repo, napp_latest))
+    os.symlink(os.path.join(user_repo, napp_filename),
+               os.path.join(user_repo, napp_latest))
 
     return Response("Napp succesfully created", 201)
 
 
-# @api.route('/napps/<author>/<name>/', methods=['DELETE'])
-def delete_napp(author, name):
+# @api.route('/napps/<username>/<name>/', methods=['DELETE'])
+def delete_napp(username, name):
     """Method used to show a detailed napp information.
 
-    This method creates the '/napps/<author>/<name>' endpoint that shows a
+    This method creates the '/napps/<username>/<name>' endpoint that shows a
     detailed napp information as a json format.
 
     Parameters:
-        author (string): Author name.
+        username (string): Name of a user.
         name (string): Napp name.
     Returns
         json (string): String with all information in JSON format.
@@ -167,20 +168,20 @@ def delete_napp(author, name):
     token = content.get('token', None)
 
     try:
-        user = User.get(author)
+        user = User.get(username)
     except NappsEntryDoesNotExists:
         return jsonify({
-            'error': 'Author {} not found'.format(author)
+            'error': 'Username {} not found'.format(username)
         }), 404
 
     try:
         napp = user.get_napp_by_name(name)
     except NappsEntryDoesNotExists:
-        msg = 'NApp {} not found for the author {}'.format(name, author)
+        msg = 'NApp {} not found for the username {}'.format(name, username)
         return jsonify({'error': msg}), 404
 
     if token != user.token.hash:
-        msg = 'Napp can\'t be deleted by the author {} '.format(author)
+        msg = 'Napp can\'t be deleted by the username {} '.format(username)
         return jsonify({'error': msg}), 404
 
     try:

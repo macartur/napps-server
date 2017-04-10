@@ -41,38 +41,38 @@ def get_comment(comment_key):
     return db_con.hgetall(comment_key)
 
 
-def get_author(author_key):
-    """Get a python dictionary with some basic informations about the author.
+def get_user(user_key):
+    """Get a python dictionary with some basic informations about the user.
 
     Parameters:
-        author_key (string): The key from a author.
+        user_key (string): The key from a user.
     Returns:
-        author (dict): python dictonary with author informations.
+        user (dict): python dictonary with user informations.
     """
     exclude = ['apps', 'city', 'comments', 'country', 'pass', 'phone', 'role',
                'state', 'status', 'timezone', 'tokens']
-    author_dict = db_con.hgetall(author_key)
+    user_dict = db_con.hgetall(user_key)
 
     for item in exclude:
-        author_dict.pop(item, None)
+        user_dict.pop(item, None)
 
-    return author_dict
+    return user_dict
 
 
-@api.route('/authors/<name>/comments', methods=['GET'])
-def get_author_comments(name):
-    """Method used to get all comments of a given author.
+@api.route('/users/<username>/comments', methods=['GET'])
+def get_user_comments(username):
+    """Method used to get all comments of a given user.
 
-    This method creates a '/authors/<name>/comments' endpoint to return a JSON
-    with all comments of a given author.
+    This method creates a '/users/<name>/comments' endpoint to return a JSON
+    with all comments of a given user.
 
     Parameters:
-        name (string): Name of a author.
+        username (string): Name of a user.
     Returns:
         json (string): Structured JSON with a list of comments.
     """
-    user_key = "author:" + name
-    if db_con.sismember("authors", user_key):
+    user_key = "user:" + username
+    if db_con.sismember("users", user_key):
         return get_all_comments(user_key)
 
 
@@ -107,8 +107,8 @@ def get_all_comments(key):
         comment = get_comment(comment_key)
         comments_dict[comment_number] = comment
 
-        author_data = get_author(comment["author"])
-        comments_dict[comment_number]["author"] = author_data
+        user_data = get_user(comment["username"])
+        comments_dict[comment_number]["username"] = user_data
 
         comment_date = format_comment(comment["datetime"])
         comments_dict[comment_number]["datetime"] = comment_date

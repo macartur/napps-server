@@ -1,62 +1,62 @@
 SADD "apps" "app:l2learning" "app:machineLearning" "app:firewall"
 
-HMSET app:l2learning "name" "l2learning" "description" "L2 Learning Switch" "license" "MIT" "rating" "4" "comments" "app:l2learning:comments" "ofversions" "app:l2learning:ofversions" "tags" "app:l2learning:tags" "author" "author:emonkey" "versions" "app:l2learning:versions"
+HMSET app:l2learning "name" "l2learning" "description" "L2 Learning Switch" "license" "MIT" "rating" "4" "comments" "app:l2learning:comments" "ofversions" "app:l2learning:ofversions" "tags" "app:l2learning:tags" "username" "username:emonkey" "versions" "app:l2learning:versions"
 
 SADD app:l2learning:ofversions "1.1" "1.2"
 SADD app:l2learning:tags "administrator" "l2" "routing"
 SADD app:l2learning:versions "0.1" "0.2"
 SADD app:l2learning:comments "comment:l2learning:1" "comment:l2learning:2"
 
-HMSET app:machineLearning "name" "machineLearning" "description" "Routing based in Machine Learning." "license" "Apache" "rating" "3" "comments" "app:machineLearning:comments" "ofversions" "app:machineLearning:ofversions" "author" "author:bart" "tags" "app:machineLearning:tags" "versions" "app:machineLearning:versions"
+HMSET app:machineLearning "name" "machineLearning" "description" "Routing based in Machine Learning." "license" "Apache" "rating" "3" "comments" "app:machineLearning:comments" "ofversions" "app:machineLearning:ofversions" "username" "username:bart" "tags" "app:machineLearning:tags" "versions" "app:machineLearning:versions"
 
 SADD app:machineLearning:ofversions "1.1" "1.2"
 SADD app:machineLearning:tags "administrator" "l3" "routing"
 SADD app:machineLearning:versions "1.1" "1.2" "1.3"
 SADD app:machineLearning:comments "comment:machineLearning:1"
 
-HMSET app:firewall "name" "firewall" "description" "Firewall application." "license" "Apache" "rating" "5" "comments" "app:firewall:comments" "ofversions" "app:firewall:ofversions" "author" "author:pecanha" "tags" "app:firewall:tags" "versions" "app:firewall:versions"
+HMSET app:firewall "name" "firewall" "description" "Firewall application." "license" "Apache" "rating" "5" "comments" "app:firewall:comments" "ofversions" "app:firewall:ofversions" "username" "username:pecanha" "tags" "app:firewall:tags" "versions" "app:firewall:versions"
 
 SADD app:firewall:ofversions "1.3"
 SADD app:firewall:tags "administrator" "security"
 SADD app:firewall:versions "1.0" "2.0"
 SADD app:firewall:comments "comment:firewall:1" "comment:firewall:2"
 
-SADD "authors" "author:emonkey" "author:bart" "author:pecanha"
+SADD "usernames" "username:emonkey" "username:bart" "username:pecanha"
 
-HMSET author:emonkey "name" "Evil Monkey" "pass" "40296ca8d3c8f8ac761c7d4b812181f7" "email" "evilm@gmail.com" "phone" "+55 11 444-2323" "city" "Sao Paulo" "state" "SP" "country" "Brazil" "timezone" "GMT-3" "apps" "author:emonkey:apps" "comments" "author:emonkey:comments" "role" "user" "tokens" "author:emonkey:tokens" "status" "active"
+HMSET username:emonkey "name" "Evil Monkey" "pass" "40296ca8d3c8f8ac761c7d4b812181f7" "email" "evilm@gmail.com" "phone" "+55 11 444-2323" "city" "Sao Paulo" "state" "SP" "country" "Brazil" "timezone" "GMT-3" "apps" "username:emonkey:apps" "comments" "username:emonkey:comments" "role" "user" "tokens" "username:emonkey:tokens" "status" "active"
 
-SADD author:emonkey:apps "l2learning"
-SADD author:emonkey:comments "comment:firewall:1" "comment:machineLearning:1"
-SADD author:emonkey:tokens "token_AA" "token_AB" "token_AC"
+SADD username:emonkey:apps "l2learning"
+SADD username:emonkey:comments "comment:firewall:1" "comment:machineLearning:1"
+SADD username:emonkey:tokens "token_AA" "token_AB" "token_AC"
 
 HMSET token_AA "login" "emonkey" "expire" "1471809444" "creation" "1471809400" "type" "Auth"
 HMSET token_AB "login" "emonkey" "expire" "1469217444" "creation" "1469217400" "type" "Auth"
 HMSET token_AC "login" "emonkey" "expire" "1466625444" "creation" "1466625400" "type" "Auth"
 
-HMSET author:bart "name" "Bart Simpson" "pass" "1a9e2d31381aec750424a694319af7a9" "email" "bart@hotmail.com" "phone" "+1 555-2121" "city" "New Jersey" "state" "NY" "country" "US" "timezone" "GMT-2" "apps" "author:bart:apps" "comments" "author:bart:comments" "role" "user" "tokens" "author:bart:tokens" "status" "active"
+HMSET username:bart "name" "Bart Simpson" "pass" "1a9e2d31381aec750424a694319af7a9" "email" "bart@hotmail.com" "phone" "+1 555-2121" "city" "New Jersey" "state" "NY" "country" "US" "timezone" "GMT-2" "apps" "username:bart:apps" "comments" "username:bart:comments" "role" "user" "tokens" "username:bart:tokens" "status" "active"
 
-SADD author:bart:apps "machineLearning"
-SADD author:bart:comments "comment:firewall:1" "comment:l2learning:1"
-SADD author:bart:tokens "token_BA" "token_BB" "token_BC"
+SADD username:bart:apps "machineLearning"
+SADD username:bart:comments "comment:firewall:1" "comment:l2learning:1"
+SADD username:bart:tokens "token_BA" "token_BB" "token_BC"
 
 HMSET token_BA "login" "bart" "expire" "1471809444" "creation" "1471809400" "type" "Auth"
 HMSET token_BB "login" "bart" "expire" "1469217444" "creation" "1469217400" "type" "Auth"
 HMSET token_BC "login" "bart" "expire" "1466625444" "creation" "1466625400" "type" "Auth"
 
-HMSET author:pecanha "name" "Eddie Carmona" "pass" "e354a9f107c3c8a6d42d78a4fbcb236c" "email" "pecanharules@ig.com.br" "phone" "+55 13 444-2323" "city" "Santos" "state" "SP" "country" "Brazil" "timezone" "GMT-3" "apps" "author:pecanha:apps" "comments" "author:pecanha:comments" "role" "admin" "tokens" "author:pecanha:tokens" "status" "active"
+HMSET username:pecanha "name" "Eddie Carmona" "pass" "e354a9f107c3c8a6d42d78a4fbcb236c" "email" "pecanharules@ig.com.br" "phone" "+55 13 444-2323" "city" "Santos" "state" "SP" "country" "Brazil" "timezone" "GMT-3" "apps" "username:pecanha:apps" "comments" "username:pecanha:comments" "role" "admin" "tokens" "username:pecanha:tokens" "status" "active"
 
-SADD author:pecanha:apps "firewall"
-SADD author:pecanha:comments "comment:l2learning:2"
-SADD author:pecanha:tokens "token_CA" "token_CB" "token_CC"
+SADD username:pecanha:apps "firewall"
+SADD username:pecanha:comments "comment:l2learning:2"
+SADD username:pecanha:tokens "token_CA" "token_CB" "token_CC"
 
 HMSET token_CA "login" "pecanha" "expire" "1471809444" "creation" "1471809400" "type" "Auth"
 HMSET token_CB "login" "pecanha" "expire" "1469217444" "creation" "1469217400" "type" "Auth"
 HMSET token_CC "login" "pecanha" "expire" "1466625444" "creation" "1466625400" "type" "Auth"
 
-HMSET comment:firewall:1 "author" "author:emonkey" "datetime" "201608070815" "comment" "It is a good appl" "rating" "3"
-HMSET comment:firewall:2 "author" "author:bart" "datetime" "201628031728" "comment" "Some bugs to correct" "rating" "2"
+HMSET comment:firewall:1 "username" "username:emonkey" "datetime" "201608070815" "comment" "It is a good appl" "rating" "3"
+HMSET comment:firewall:2 "username" "username:bart" "datetime" "201628031728" "comment" "Some bugs to correct" "rating" "2"
 
-HMSET comment:machineLearning:1 "author" "author:emonkey" "datetime" "201608070815" "comment" "It is a good appl" "rating" "3"
+HMSET comment:machineLearning:1 "username" "username:emonkey" "datetime" "201608070815" "comment" "It is a good appl" "rating" "3"
 
-HMSET comment:l2learning:1 "author" "author:bart" "datetime" "201608070815" "comment" "It is a good appl" "rating" "3"
-HMSET comment:l2learning:2 "author" "author:pecanha" "datetime" "201628031728" "comment" "Some bugs to correct" "rating" "2"
+HMSET comment:l2learning:1 "username" "username:bart" "datetime" "201608070815" "comment" "It is a good appl" "rating" "3"
+HMSET comment:l2learning:2 "username" "username:pecanha" "datetime" "201628031728" "comment" "Some bugs to correct" "rating" "2"

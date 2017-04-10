@@ -15,7 +15,7 @@ from docutils import core
 
 from napps_server import config
 # Local source tree imports
-from napps_server.core.exceptions import (InvalidAuthor, InvalidNappMetaData,
+from napps_server.core.exceptions import (InvalidUser, InvalidNappMetaData,
                                           NappsEntryDoesNotExists,
                                           RepositoryNotReachable)
 from napps_server.core.utils import generate_hash, render_template
@@ -234,7 +234,7 @@ class User(object):
         This is a save/update method. If the user already exists then update.
         """
         if not self.password:
-            raise InvalidAuthor('Impossible to save a user without password.')
+            raise InvalidUser('Impossible to save a user without password.')
         db_con.sadd("users", self.redis_key)
         db_con.hmset(self.redis_key, self.as_dict(hide_sensible=False,
                                                   detailed=True))
@@ -246,7 +246,7 @@ class User(object):
         """
         if not self.password:
             msg = 'Impossible to delete a user without password.'
-            raise InvalidAuthor(msg)
+            raise InvalidUser(msg)
         [napp.delete() for napp in self.get_all_napps()]
         if db_con.delete(self.redis_key) == 0 or \
            db_con.srem('users', self.redis_key) == 0:
@@ -465,7 +465,7 @@ class Napp(object):
     """Class to manage Napp models."""
 
     schema = {
-        "author": {"type": "string"},
+        "username": {"type": "string"},
         "name": {"type": "string"},
         "description": {"type": "string"},
         "long_description": {"type": "string"},
@@ -483,7 +483,7 @@ class Napp(object):
                  "minItems": 1,
                  "uniqueItems": True},
         "user": {"type": "string"},  # Not to be retrieved from json.
-        "required": ["author", "name", "description"]
+        "required": ["username", "name", "description"]
     }
 
     def __init__(self, content, user=None):
@@ -494,7 +494,7 @@ class Napp(object):
             user (:class:`napps_server.core.models.User`):
                 Associate a user that belongs this Napp.
         """
-        self.user = User.get(content['author'])
+        self.user = User.get(content['username'])
         self.readme = ""
         if content is not None:
             self._populate_from_dict(content)
@@ -506,7 +506,7 @@ class Napp(object):
         Returns:
             key (string): String with redis key.
         """
-        return "napp:{}/{}".format(self.author, self.name)
+        return "napp:{}/{}".format(self.username, self.name)
 
     @property
     def readme_rst(self):
@@ -573,8 +573,8 @@ class Napp(object):
                 The new Napp instance registered.
         """
         napp = cls(attributes, user)
-        if napp.user.username != napp.author:
-            raise InvalidAuthor
+        if napp.user.username != napp.username:
+            raise InvalidUser
         else:
             napp.save()
             return napp
@@ -585,8 +585,8 @@ class Napp(object):
         Parameters:
             attributes (dict): Python dictionary with napp attributes.
         """
-        if self.user.username != attributes.author:
-            raise InvalidAuthor
+        if self.user.username != attributes.username:
+            raise InvalidUser
         else:
             self._populate_from_dict(attributes)
             self.save()
@@ -604,7 +604,7 @@ class Napp(object):
                     data[key] = getattr(self, key, [])
                 else:
                     data[key] = getattr(self, key, '')
-        data['user'] = self.author
+        data['user'] = self.username
         data['readme'] = self.readme_html
         return data
 
@@ -623,7 +623,7 @@ class Napp(object):
         This is a save/update method. If the app exists then update.
         """
         db_con.sadd("napps", self.redis_key)
-        db_con.sadd("user:%s:napps" % self.author, self.redis_key)
+        db_con.sadd("user:%s:napps" % self.username, self.redis_key)
         data = self.as_dict()
         data['readme'] = self.readme_rst
         db_con.hmset(self.redis_key, data)
@@ -632,7 +632,7 @@ class Napp(object):
         """Delete a object from redis database."""
         if not self.user.password:
             msg = 'Impossible to delete a napp without password.'
-            raise InvalidAuthor(msg)
+            raise InvalidUser(msg)
 
         if db_con.delete(self.redis_key) == 0 or \
            db_con.srem('napps', self.redis_key) == 0 or \
