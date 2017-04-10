@@ -24,10 +24,11 @@ def register_user():
 
     This method will register  '/users/' endpoint and receive POST requests.
     If the username already exists will return a JSON with a error message and
-    HTTP code 401, otherwise will return HTTP code 201 and a empty string.
+    HTTP code 403, otherwise will return HTTP code 201 and a empty string.
 
     Returns:
-        json (string): JSON with result of user registration.
+        HTTP code 201 if the user was successfully created.
+        HTTP code 403 if the user already exists.
     """
     content = get_request_data(request, User.schema)
 
@@ -78,6 +79,7 @@ def get_user(username):
         username (string): Name of a user.
     Returns:
         json (string): JSON with all information about a specific author.
+        HTTP code 404 if the user was not found
     """
     try:
         user = User.get(username)
@@ -99,7 +101,11 @@ def confirm_user(username, token):
         username (string):  Name of a user.
         token (string): valid token.
     Returns:
-        json (string): JSON with error message.
+        HTTP code 307 redirect to the NApps Repository home page if the
+            confirmation was successful.
+        HTTP code 401 if user does not hold a valid Token or if the url passed
+            token does not match the user token.
+        HTTP code 404 if the user was not found
     """
     # Check if user exists
     url = 'http://napps.kytos.io?{}'
@@ -107,14 +113,11 @@ def confirm_user(username, token):
     try:
         user = User.get(username)
     except NappsEntryDoesNotExists:
-        return redirect(url.format("user_not_found"), code=307)
-
-    if not user.token:
-        return redirect(url.format('invalid_token'), code=307)
+        return redirect(url.format("user_not_found"), code=404)
 
     # Check if token belongs to user and is a valid token
-    if (user.token.hash != token) or (not user.token.is_valid()):
-        return redirect(url.format('invalid_token'), code=307)
+    if not (user.token and user.token.hash == token):
+        return redirect(url.format('invalid_token'), code=401)
 
     user.enable()
     user.token.invalidate()
@@ -123,24 +126,26 @@ def confirm_user(username, token):
 
 
 # @api.route("/users/<username>/", methods=['DELETE'])
-def delete_user(username):
-    """Method used to create a endpoint to delete a user.
+@requires_token
+def delete_user(user, username):
+    """Method used to create an endpoint to delete an user.
 
     The endpoint created is /users/<username>/
+    Parameters:
+        username (string)
+    Returns:
+        HTTP code 403 if the username does not match the authenticated user
     """
     content = get_request_data(request, User.schema)
-    token = content.get('token', None)
+
+    if not user.username == username:
+        msg = 'You cannot delete other users.'
+        return jsonify({'error': msg}), 403
 
     try:
-        user = User.get(username)
-    except NappsEntryDoesNotExists:
-        error_msg = "User {} not found.".format(username)
-        return jsonify({"error": error_msg}), 404
-
-    if token != user.token.hash:
-        msg = "The user {} can't be deleted using the token {}."
-        return jsonify({"error": msg.format(user.username, token)}), 404
-
-    user.delete()
-    msg = 'The user {} was deleted.'.format(username)
-    return jsonify({'success': msg})
+        user.delete()
+        msg = 'The user {} was deleted.'.format(username)
+        return jsonify({'success': msg}), 200
+    except:
+        msg = 'Ops! Something went wrong while trying to delete the user {}'
+        return jsonify({'error': msg.format(username)}), 500

@@ -75,8 +75,11 @@ def get_napp(username, name=''):
     Parameters:
         username (string): Name of a user.
         name (string): Napp name.
-    Returns
+
+    Returns:
         json (string): String with all information in JSON format.
+        HTTP code 404 if no user was found with the given username.
+        HTTP code 404 if the NApp was not found for the given user.
     """
     try:
         user = User.get(username)
@@ -109,8 +112,11 @@ def register_napp(user):
     This method creates the '/napps' endpoint to register a new Network
     Application.
 
-    :return: Return HTTP code 201 if napp were succesfully created and 4XX in
-    case of failure.
+    Returns:
+        HTTP code 201 if napp were succesfully created.
+        HTTP code 400 if there were not .napp file sent on the request.
+        HTTP code 400 if there were errors on the NApp metadata.
+        HTTP code 401 if the current user is trying to upload someone else NApp
     """
     #: As we expect here a multipart/form POST, then the 'data' may come on the
     #: form attribute of the request, instead of the json attribute.
@@ -122,17 +128,15 @@ def register_napp(user):
     username = content.get('username')
     napp_name = content.get('name')
 
-    if not user.enabled or not username == user.username:
-        return Response("Permission denied", 401)
-    elif not sent_file or not _allowed_file(sent_file.filename):
-        return Response("Invalid file/file extension.", 401)
+    if not sent_file or not _allowed_file(sent_file.filename):
+        return Response("Invalid file/file extension.", 400)
 
     try:
         Napp.new_napp_from_dict(content, user)
     except InvalidUser:
-        return Response("Permission denied. Invalid username.", 401)
+        return Response("Permission denied.", 401)
     except InvalidNappMetaData:
-        return Response("Permission denied. Invalid metadata.", 401)
+        return Response("Invalid metadata.", 400)
 
     user_repo = os.path.join(NAPP_REPO, username)
     os.makedirs(user_repo, exist_ok=True)
@@ -154,43 +158,36 @@ def register_napp(user):
 
 
 # @api.route('/napps/<username>/<name>/', methods=['DELETE'])
-def delete_napp(username, name):
-    """Method used to show a detailed napp information.
+@requires_token
+def delete_napp(user, username, name):
+    """Method used to delete a NApp.
 
-    This method creates the '/napps/<username>/<name>' endpoint that shows a
-    detailed napp information as a json format.
+    This method receives a "DELETE" HTTP command on the endpoint
+    '/napps/<username>/<name>' to delete the given NApp. A NApp can only be
+    deleted by it's "owner".
 
     Parameters:
         username (string): Name of a user.
-        name (string): Napp name.
+        name (string): NApp name.
     Returns
-        json (string): String with all information in JSON format.
+        HTTP code 200 if the NApp was successfully deleted.
+        HTTP code 403 if there was permission problems.
+        HTTP code 404 if the NApp was not found for the given username.
     """
-    content = get_request_data(request, Napp.schema)
-
-    token = content.get('token', None)
-
-    try:
-        user = User.get(username)
-    except NappsEntryDoesNotExists:
-        return jsonify({
-            'error': 'Username {} not found'.format(username)
-        }), 404
+    if user.username != username:
+        return jsonify({"Your user can't delete this NApp" }), 401
 
     try:
         napp = user.get_napp_by_name(name)
     except NappsEntryDoesNotExists:
-        msg = 'NApp {} not found for the username {}'.format(name, username)
-        return jsonify({'error': msg}), 404
-
-    if token != user.token.hash:
-        msg = 'Napp can\'t be deleted by the username {} '.format(username)
+        msg = 'NApp {} not found for the user {}'.format(name, username)
         return jsonify({'error': msg}), 404
 
     try:
         napp.delete()
     except NappsEntryDoesNotExists:
-        msg = 'Napp {} can\'t be deleted.'.format(name)
+        msg = 'Something went wrong while trying to delete the NApp {}/{}.'
+        msg += msg.format(username, name)
         return jsonify({'error': msg}), 404
 
     msg = 'Napp {} was deleted.'
