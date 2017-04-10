@@ -86,7 +86,7 @@ Napps-Server Installation
 for Python 3) or include this project in your `requirements.txt`.
 
 Installing from PyPI
-""""""""""""""""""""
+^^^^^^^^^^^^^^^^^^^^
 
 After installed `pip3` you can install *napps-server* running:
 
@@ -96,7 +96,7 @@ After installed `pip3` you can install *napps-server* running:
 
 
 Installing from source code
-"""""""""""""""""""""""""""
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 First you need to clone *napps-server* repository:
 
