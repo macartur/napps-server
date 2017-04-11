@@ -72,6 +72,6 @@ def get_request_data(request, schema):
 
     # WARNING: This will be removed in future versions, when 'author' will be
     # removed.
-    content['username'] = content.get('author')
+    content['username'] = content.get('username') or content.get('author')
 
     return content
