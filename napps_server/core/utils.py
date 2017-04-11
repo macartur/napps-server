@@ -70,4 +70,8 @@ def get_request_data(request, schema):
     if content is None:
         content = immutableMultiDict_to_dict(schema, request.form)
 
+    # WARNING: This will be removed in future versions, when 'author' will be
+    # removed.
+    content['username'] = content.get('author')
+
     return content

@@ -494,7 +494,12 @@ class Napp(object):
             user (:class:`napps_server.core.models.User`):
                 Associate a user that belongs this Napp.
         """
-        self.user = User.get(content['username'])
+
+        # WARNING: This will be removed in future versions, when 'author' will
+        # be removed.
+        username = content.get('username', content.get('author'))
+
+        self.user = User.get(username)
         self.readme = ""
         if content is not None:
             self._populate_from_dict(content)
@@ -605,6 +610,9 @@ class Napp(object):
                 else:
                     data[key] = getattr(self, key, '')
         data['user'] = self.username
+        # WARNING: This will be removed in future versions, when 'author' will
+        # be removed.
+        data['author'] = self.username
         data['readme'] = self.readme_html
         return data
 

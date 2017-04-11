@@ -117,9 +117,12 @@ def register_napp(user):
     content = get_request_data(request, Napp.schema)
 
     # Get the name of the uploaded file
-    sent_file = request.files['file']
+    sent_file = request.files.get('file')
 
-    if not user.enabled or not content['username'] == user.username:
+    username = content.get('username')
+    napp_name = content.get('name')
+
+    if not user.enabled or not username == user.username:
         return Response("Permission denied", 401)
     elif not sent_file or not _allowed_file(sent_file.filename):
         return Response("Invalid file/file extension.", 401)
@@ -131,10 +134,10 @@ def register_napp(user):
     except InvalidNappMetaData:
         return Response("Permission denied. Invalid metadata.", 401)
 
-    user_repo = os.path.join(NAPP_REPO, content['username'])
+    user_repo = os.path.join(NAPP_REPO, username)
     os.makedirs(user_repo, exist_ok=True)
-    napp_latest = content['name'] + '-latest.napp'
-    napp_filename = _napp_versioned_name(content['username'], content['name'])
+    napp_latest = napp_name + '-latest.napp'
+    napp_filename = _napp_versioned_name(username, napp_name)
     # Move the file form the temporal folder to
     # the upload folder we setup
     sent_file.save(os.path.join(user_repo, napp_filename))
@@ -188,7 +191,7 @@ def delete_napp(username, name):
         napp.delete()
     except NappsEntryDoesNotExists:
         msg = 'Napp {} can\'t be deleted.'.format(name)
-        return  jsonify({'error': msg }), 404
+        return jsonify({'error': msg}), 404
 
     msg = 'Napp {} was deleted.'
     return jsonify({'success': msg}), 200
