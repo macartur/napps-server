@@ -1,4 +1,4 @@
-"""Module with main decoretors used by napps-server."""
+"""Module with main decorators used by napps-server."""
 from functools import wraps
 
 from flask import Response, jsonify, request
