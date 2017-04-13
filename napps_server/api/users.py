@@ -134,7 +134,9 @@ def delete_user(user, username):
     Parameters:
         username (string)
     Returns:
+        HTTP code 200 if the user was successfully deleted.
         HTTP code 403 if the username does not match the authenticated user
+        HTTP code 500 if any unexpected error occurs while deleting the user.
     """
     content = get_request_data(request, User.schema)
 
