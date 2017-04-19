@@ -1,14 +1,12 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3.6
 """Recursively extract metadata from NApps repo."""
 import json
-import os
 import pprint
 import tarfile
 
 from pathlib import Path
 
-PRINTER = pprint.PrettyPrinter(indent=2)
-WD = Path('.')
+WD = Path()
 REPO = WD / 'repo'
 
 
@@ -23,8 +21,7 @@ def extract_napp_json(napp_path):
     """
     with tarfile.open(napp_path, 'r:xz') as napp:
         jsonfile = napp.extractfile('kytos.json').read().decode('utf-8')
-        kytos_json = json.loads(jsonfile)
-        PRINTER.pprint(kytos_json)
+        print(jsonfile)
 
 
 def walk_on_repo(repo_path=REPO):
@@ -33,18 +30,17 @@ def walk_on_repo(repo_path=REPO):
     Args:
         repo_path (Path): The path to the repository to be 'parsed'.
     """
-    os.chdir(repo_path)
-    napps = list(Path('.').glob('**/*.napp'))
+    napps = repo_path.glob('**/*.napp')
     first = True
     for napp in napps:
         if first:
             first = False
-            print('["napps":{ ')
+            print('[{"napps":{ ')
         else:
             print(',')
         print('"{}": '.format(napp))
         extract_napp_json(napp)
-    print('}]')
+    print('}}]')
 
 if __name__ == '__main__':
     walk_on_repo()
