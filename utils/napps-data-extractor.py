@@ -35,12 +35,12 @@ def walk_on_repo(repo_path=REPO):
     for napp in napps:
         if first:
             first = False
-            print('[{"napps":{ ')
+            print('{"napps":{ ')
         else:
             print(',')
         print('"{}": '.format(napp))
         extract_napp_json(napp)
-    print('}}]')
+    print('}}')
 
 if __name__ == '__main__':
     walk_on_repo()
