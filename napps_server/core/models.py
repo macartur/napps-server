@@ -8,6 +8,7 @@ from copy import deepcopy
 from datetime import datetime, timedelta
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from hashlib import md5
 from urllib.request import urlopen
 
 import bcrypt
@@ -614,6 +615,15 @@ class Napp(object):
         # be removed.
         data['author'] = self.username
         data['readme'] = self.readme_html
+        # Add link to gravatar of the NApp creator
+        all_users = User.all()
+        data['avatar'] = 'https://www.gravatar.com/avatar/'
+        for user in all_users:
+            if user.username == self.username:
+                mail_hash = md5(user.email.encode('utf-8'))
+                data['avatar'] += mail_hash.hexdigest()
+                break
+        data['avatar'] += '?d=https%3A%2F%2Favatars.githubusercontent.com%2Fkytos'
         return data
 
     def as_json(self):
