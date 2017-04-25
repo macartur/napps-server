@@ -80,6 +80,14 @@ class User(object):
         return attributes_names.difference(excludes)
 
     @property
+    def avatar(self):
+        email_hash = md5(self.email.encode('utf-8'))
+        avatar_url = 'https://www.gravatar.com/avatar/'
+        avatar_url += email_hash.hexdigest()
+        avatar_url += '?d=https%3A%2F%2Favatars.githubusercontent.com%2Fkytos'
+        return avatar_url
+
+    @property
     def redis_key(self):
         """Method used to built a redis key.
 
@@ -615,15 +623,10 @@ class Napp(object):
         # be removed.
         data['author'] = self.username
         data['readme'] = self.readme_html
-        # Add link to gravatar of the NApp creator
-        all_users = User.all()
-        data['avatar'] = 'https://www.gravatar.com/avatar/'
-        for user in all_users:
-            if user.username == self.username:
-                mail_hash = md5(user.email.encode('utf-8'))
-                data['avatar'] += mail_hash.hexdigest()
-                break
-        data['avatar'] += '?d=https%3A%2F%2Favatars.githubusercontent.com%2Fkytos'
+
+        # Add User avatar link
+        user = User.get(self.username)
+        data['avatar'] = user.avatar
         return data
 
     def as_json(self):
