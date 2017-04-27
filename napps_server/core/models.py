@@ -8,6 +8,7 @@ from copy import deepcopy
 from datetime import datetime, timedelta
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from hashlib import md5
 from urllib.request import urlopen
 
 import bcrypt
@@ -77,6 +78,14 @@ class User(object):
         excludes = set(['required'])
         attributes_names = set(User.schema)
         return attributes_names.difference(excludes)
+
+    @property
+    def avatar(self):
+        email_hash = md5(self.email.encode('utf-8'))
+        avatar_url = 'https://www.gravatar.com/avatar/'
+        avatar_url += email_hash.hexdigest()
+        avatar_url += '?d=https%3A%2F%2Favatars.githubusercontent.com%2Fkytos'
+        return avatar_url
 
     @property
     def redis_key(self):
@@ -614,6 +623,10 @@ class Napp(object):
         # be removed.
         data['author'] = self.username
         data['readme'] = self.readme_html
+
+        # Add User avatar link
+        user = User.get(self.username)
+        data['avatar'] = user.avatar
         return data
 
     def as_json(self):
