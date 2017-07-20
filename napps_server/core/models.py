@@ -518,7 +518,7 @@ class Napp(object):
         """Method used to built a redis key.
 
         Returns:
-            key (string): String with redis key.
+            string: String with redis key.
         """
         return "napp:{}/{}".format(self.username, self.name)
 

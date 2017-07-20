@@ -3,6 +3,7 @@
 import os
 import re
 from time import strftime
+from pathlib import Path
 
 # Third-party imports
 
@@ -18,7 +19,7 @@ from napps_server.core.utils import get_request_data
 # Flask Blueprints
 api = Blueprint('napp_api', __name__)
 
-NAPP_REPO = '/var/www/kytos/napps/repo'
+NAPP_REPO = Path('/var/www/kytos/napps/repo')
 ALLOWED_EXTENSIONS = set(['napp'])
 
 
@@ -26,24 +27,6 @@ def _allowed_file(filename):
     """Check if the filename matches one of the required extensions."""
     return '.' in filename and \
         filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
-
-
-def _curr_date():
-    """Return current date on the format YYYMMDDD."""
-    return strftime("%Y%m%d")
-
-
-def _napp_versioned_name(username, napp_name):
-    """Build the napp filename with a timestamp and a counter."""
-    user_repo = os.path.join(NAPP_REPO, username)
-    basename = napp_name + '-' + _curr_date() + '-'
-    regexp = re.compile(r'' + basename + '(\d+)' + '.napp')
-    counter = 0
-    for file in os.listdir(user_repo):
-        matched = regexp.match(file)
-        if matched and int(matched.group(1)) > counter:
-            counter = int(matched.group(1))
-    return basename + str(counter + 1) + '.napp'
 
 
 @api.route('/napps/', methods=['GET'])
@@ -85,7 +68,7 @@ def get_napp(username, name=''):
         user = User.get(username)
     except NappsEntryDoesNotExists:
         return jsonify({
-            'error': 'Username {} not found'.format(username)
+            'error': f'Username {username} not found'
         }), 404
 
     if not name:
@@ -96,8 +79,7 @@ def get_napp(username, name=''):
         napp = user.get_napp_by_name(name)
     except NappsEntryDoesNotExists:
         return jsonify({
-            'error': 'NApp {} not found for the username {}'.format(name,
-                                                                    username)
+            'error': f'NApp {name} not found for the username {username}'
         }), 404
 
     return jsonify(napp.as_dict()), 200
@@ -125,34 +107,29 @@ def register_napp(user):
     # Get the name of the uploaded file
     sent_file = request.files.get('file')
 
-    username = content.get('username')
-    napp_name = content.get('name')
-
     if not sent_file or not _allowed_file(sent_file.filename):
         return Response("Invalid file/file extension.", 400)
 
     try:
-        Napp.new_napp_from_dict(content, user)
+        napp = Napp.new_napp_from_dict(content, user)
     except InvalidUser:
         return Response("Permission denied.", 401)
     except InvalidNappMetaData:
         return Response("Invalid metadata.", 400)
 
-    user_repo = os.path.join(NAPP_REPO, username)
-    os.makedirs(user_repo, exist_ok=True)
-    napp_latest = napp_name + '-latest.napp'
-    napp_filename = _napp_versioned_name(username, napp_name)
-    # Move the file form the temporal folder to
-    # the upload folder we setup
-    sent_file.save(os.path.join(user_repo, napp_filename))
+    user_repo = NAPP_REPO / napp.username
+    user_repo.mkdir(parents=True, exist_ok=True)
+
+    # Move the file form to the upload folder
+    napp_file = user_repo / f'{napp.name}-{napp.version}.napp'
+    sent_file.save(str(napp_file))
 
     # Updating the 'latest' version, symbolic linking it to the uploaded file.
-    try:
-        os.remove(os.path.join(user_repo, napp_latest))
-    except FileNotFoundError:
-        pass
-    os.symlink(os.path.join(user_repo, napp_filename),
-               os.path.join(user_repo, napp_latest))
+    latest_napp_file = user_repo / f'{napp.name}-latest.napp'
+
+    if latest_napp_file.exists():
+        latest_napp_file.unlink()
+    latest_napp_file.symlink_to(napp_file)
 
     return Response("Napp succesfully created", 201)
 
