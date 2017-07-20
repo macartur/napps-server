@@ -2,10 +2,9 @@
 # System imports
 
 # Third-party imports
+from flask import Blueprint, Response, jsonify, redirect, request
 
 # Local source tree imports
-from flask import Blueprint, jsonify, redirect, request, Response
-
 from napps_server.core.decorators import (requires_token, validate_json,
                                           validate_schema)
 from napps_server.core.exceptions import NappsEntryDoesNotExists
