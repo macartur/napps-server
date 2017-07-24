@@ -12,7 +12,6 @@ from hashlib import md5
 
 import bcrypt
 from docutils import core
-
 from napps_server import config
 # Local source tree imports
 from napps_server.core.exceptions import (InvalidNappMetaData, InvalidUser,

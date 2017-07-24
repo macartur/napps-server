@@ -3,7 +3,6 @@ from functools import wraps
 
 from flask import Response, jsonify, request
 from jsonschema import ValidationError, validate
-
 from napps_server.core.exceptions import NappsEntryDoesNotExists
 from napps_server.core.models import Token, User
 from napps_server.core.utils import authenticate, get_request_data

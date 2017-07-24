@@ -4,7 +4,6 @@
 
 # Third-party imports
 from flask import Blueprint, Response, jsonify, request
-
 # Local source tree imports
 from napps_server.core.decorators import requires_auth, requires_token
 from napps_server.core.models import User

@@ -5,7 +5,6 @@ from pathlib import Path
 
 # Local source tree imports
 from flask import Blueprint, Response, jsonify, request
-
 from napps_server.core.decorators import requires_token, validate_json
 from napps_server.core.exceptions import (InvalidNappMetaData, InvalidUser,
                                           NappsEntryDoesNotExists)
