@@ -9,16 +9,14 @@ from datetime import datetime, timedelta
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from hashlib import md5
-from urllib.request import urlopen
 
 import bcrypt
 from docutils import core
 
 from napps_server import config
 # Local source tree imports
-from napps_server.core.exceptions import (InvalidUser, InvalidNappMetaData,
-                                          NappsEntryDoesNotExists,
-                                          RepositoryNotReachable)
+from napps_server.core.exceptions import (InvalidNappMetaData, InvalidUser,
+                                          NappsEntryDoesNotExists)
 from napps_server.core.utils import generate_hash, render_template
 
 db_con = config.DB_CON
@@ -81,6 +79,11 @@ class User(object):
 
     @property
     def avatar(self):
+        """Return an avatar url based on user email.
+
+        Returns:
+            string: Avatar url.
+        """
         email_hash = md5(self.email.encode('utf-8'))
         avatar_url = 'https://www.gravatar.com/avatar/'
         avatar_url += email_hash.hexdigest()
@@ -112,8 +115,6 @@ class User(object):
         token = Token.from_dict(attributes)
         if token.is_valid():
             return token
-        else:
-            return None
 
     @classmethod
     def get(cls, username):
@@ -180,7 +181,7 @@ class User(object):
         for attribute in User.attributes():
             setattr(user, attribute, attributes.get(attribute, None))
 
-        user.enabled = eval(attributes.get('enabled', False))
+        user.enabled = attributes.get('enabled') == 'True'
 
         return user
 
@@ -256,7 +257,10 @@ class User(object):
         if not self.password:
             msg = 'Impossible to delete a user without password.'
             raise InvalidUser(msg)
-        [napp.delete() for napp in self.get_all_napps()]
+
+        for napp in self.get_all_napps():
+            napp.delete()
+
         if db_con.delete(self.redis_key) == 0 or \
            db_con.srem('users', self.redis_key) == 0:
             return False
@@ -339,7 +343,7 @@ class User(object):
             napp = Napp(db_con.hgetall("napp:{}/{}".format(self.username,
                                                            name)))
             return napp
-        except:
+        except Exception:
             msg = "Napp {} not found for user {}.".format(name, self.username)
             raise NappsEntryDoesNotExists(msg)
 
@@ -394,7 +398,6 @@ class Token(object):
             token (:class:`napps_server.core.models.Token`):
                 Token built using the given attributes.
         """
-        # TODO: Fix this hardcode attributes
         return Token(attributes['hash'],
                      datetime.strptime(attributes['created_at'],
                                        '%Y-%m-%d %H:%M:%S.%f'),
@@ -503,7 +506,6 @@ class Napp(object):
             user (:class:`napps_server.core.models.User`):
                 Associate a user that belongs this Napp.
         """
-
         # WARNING: This will be removed in future versions, when 'author' will
         # be removed.
         username = content.get('username', content.get('author'))
@@ -567,7 +569,7 @@ class Napp(object):
                 # Converting to list, if needed.
                 if self.schema[key]['type'] == 'array' and \
                    not isinstance(attributes.get(key), list):
-                    attributes[key] = eval(attributes.get(key, []))
+                    attributes[key] = list(attributes.get(key, []))
 
                 setattr(self, key, attributes.get(key))
 
@@ -614,7 +616,7 @@ class Napp(object):
         data = {}
         for key in self.schema:
             if key != 'required':
-                if self.schema[key]['type'] is 'array':
+                if self.schema[key]['type'] == 'array':
                     data[key] = getattr(self, key, [])
                 else:
                     data[key] = getattr(self, key, '')

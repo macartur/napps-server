@@ -1,20 +1,19 @@
 """Module used to make avaliable napps routes."""
 # System imports
 import os
-import re
-from time import strftime
 from pathlib import Path
-
-# Third-party imports
 
 # Local source tree imports
 from flask import Blueprint, Response, jsonify, request
 
 from napps_server.core.decorators import requires_token, validate_json
-from napps_server.core.exceptions import (InvalidUser, InvalidNappMetaData,
+from napps_server.core.exceptions import (InvalidNappMetaData, InvalidUser,
                                           NappsEntryDoesNotExists)
 from napps_server.core.models import Napp, User
 from napps_server.core.utils import get_request_data
+
+# Third-party imports
+
 
 # Flask Blueprints
 api = Blueprint('napp_api', __name__)
@@ -154,7 +153,7 @@ def delete_napp(user, username, name):
         HTTP code 404 if the NApp was not found for the given username.
     """
     if user.username != username:
-        return jsonify({"Your user can't delete this NApp" }), 401
+        return jsonify({"Your user can't delete this NApp"}), 401
 
     try:
         napp = user.get_napp_by_name(name)

@@ -1,5 +1,6 @@
 """Module with default settings to napps-server."""
 import os
+
 import redis
 
 # Define the application directory

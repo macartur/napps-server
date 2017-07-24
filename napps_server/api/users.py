@@ -3,11 +3,12 @@
 
 # Third-party imports
 from flask import Blueprint, Response, jsonify, redirect, request
+from redis.exceptions import RedisError
 
 # Local source tree imports
 from napps_server.core.decorators import (requires_token, validate_json,
                                           validate_schema)
-from napps_server.core.exceptions import NappsEntryDoesNotExists
+from napps_server.core.exceptions import InvalidUser, NappsEntryDoesNotExists
 from napps_server.core.models import User
 from napps_server.core.utils import get_request_data
 
@@ -137,16 +138,15 @@ def delete_user(user, username):
         HTTP code 403 if the username does not match the authenticated user
         HTTP code 500 if any unexpected error occurs while deleting the user.
     """
-    content = get_request_data(request, User.schema)
-
     if not user.username == username:
         msg = 'You cannot delete other users.'
         return jsonify({'error': msg}), 403
 
     try:
         user.delete()
-        msg = 'The user {} was deleted.'.format(username)
-        return jsonify({'success': msg}), 200
-    except:
+    except (RedisError, InvalidUser):
         msg = 'Ops! Something went wrong while trying to delete the user {}'
         return jsonify({'error': msg.format(username)}), 500
+
+    msg = 'The user {} was deleted.'.format(username)
+    return jsonify({'success': msg}), 200
