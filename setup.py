@@ -9,6 +9,7 @@ from abc import abstractmethod
 from subprocess import CalledProcessError, call, check_call
 
 from setuptools import Command, find_packages, setup
+
 from napps_server import __version__
 
 if 'bdist_wheel' in sys.argv:

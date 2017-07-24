@@ -1,9 +1,6 @@
 #!/usr/bin/env python3.6
 """Recursively extract metadata from NApps repo."""
-import json
-import pprint
 import tarfile
-
 from pathlib import Path
 
 WD = Path()
@@ -41,6 +38,7 @@ def walk_on_repo(repo_path=REPO):
         print('"{}": '.format(napp))
         extract_napp_json(napp)
     print('}}')
+
 
 if __name__ == '__main__':
     walk_on_repo()
